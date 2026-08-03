@@ -10,6 +10,21 @@ interface QRGeneratorProps {
   photoUrl?: string | null
 }
 
+// ── Cifrado XOR con clave ASCII por repetición ───────────────────────
+const CIPHER_KEY = 'IDO'
+
+/** Cifra un string aplicando XOR carácter a carácter con la clave repetida, devuelve Base64. */
+function xorEncrypt(text: string, key: string): string {
+  const keyLen = key.length
+  let result = ''
+  for (let i = 0; i < text.length; i++) {
+    const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % keyLen)
+    result += String.fromCharCode(charCode)
+  }
+  // Codificamos en Base64 para que el QR sólo contenga caracteres imprimibles
+  return btoa(unescape(encodeURIComponent(result)))
+}
+
 // ── Utilidades ────────────────────────────────────────────────────────
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath()
@@ -239,7 +254,8 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [dataUrl, setDataUrl] = useState('')
   const [rendering, setRendering] = useState(true)
-  const qrData = JSON.stringify({ sid: studentId })
+  // Contenido en claro → cifrado XOR con clave "IDO" → Base64
+  const qrData = xorEncrypt(JSON.stringify({ sid: studentId }), CIPHER_KEY)
 
   const render = useCallback(async () => {
     const canvas = canvasRef.current
