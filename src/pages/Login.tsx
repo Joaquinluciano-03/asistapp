@@ -76,14 +76,18 @@ export function Login() {
 
           <h1
             style={{
-              fontSize: '1.75rem',
-              fontWeight: 800,
-              letterSpacing: '-0.03em',
+              fontSize: '2rem',
+              fontWeight: 900,
+              letterSpacing: '-0.04em',
               marginBottom: '0.25rem',
               color: '#f1f5f9',
+              background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
             }}
           >
-            AsistApp
+            AsistIDO
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
             Escuela Don Orione Victoria

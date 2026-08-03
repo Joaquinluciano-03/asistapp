@@ -73,8 +73,8 @@ export function Navbar() {
               🏫
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f1f5f9', lineHeight: 1.2 }}>
-                AsistApp
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#f1f5f9', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+                AsistIDO
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.2 }}>
                 Don Orione Victoria
