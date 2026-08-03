@@ -35,13 +35,13 @@ async function loadImage(url: string): Promise<HTMLImageElement | null> {
   })
 }
 
-// ── Dimensiones — SCALE=3 para ~300 DPI al imprimir ──────────────────
+// ── Dimensiones (Formato Vertical) — SCALE=3 para ~300 DPI ───────────
 const S = 3                         // factor de escala de impresión
-const CW = 360 * S                  // ancho del carnet: 1080 px
-const CH = 228 * S                  // alto de cada cara: 684 px
-const FOLD = 14 * S                 // banda de doblez: 42 px
-const TOTAL_H = CH * 2 + FOLD       // alto total del canvas: 1410 px
-const R = 16 * S                    // border-radius
+const CW = 240 * S                  // ancho del carnet: 720 px
+const CH = 380 * S                  // alto de cada cara: 1140 px
+const FOLD = 16 * S                 // banda de doblez: 48 px
+const TOTAL_H = CH * 2 + FOLD       // alto total del canvas: 2328 px
+const R = 12 * S                    // border-radius
 
 // ── Cara FRONTAL (datos + foto) ────────────────────────────────────────
 async function drawFront(
@@ -53,7 +53,7 @@ async function drawFront(
   division: string,
   photoUrl: string | null | undefined
 ) {
-  const HEADER_H = 52 * S
+  const HEADER_H = 60 * S
 
   // Fondo blanco del carnet
   ctx.save()
@@ -82,22 +82,22 @@ async function drawFront(
   // Texto header
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'
-  ctx.font = `bold ${13 * S}px Inter, sans-serif`
-  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, offsetY + 22 * S)
+  ctx.font = `bold ${11 * S}px Inter, sans-serif`
+  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, offsetY + 26 * S)
   ctx.fillStyle = 'rgba(180,200,255,0.8)'
-  ctx.font = `${9 * S}px Inter, sans-serif`
-  ctx.fillText('Victoria — Buenos Aires  ·  CARNET DE ASISTENCIA', CW / 2, offsetY + 37 * S)
+  ctx.font = `${8 * S}px Inter, sans-serif`
+  ctx.fillText('Victoria — Buenos Aires', CW / 2, offsetY + 42 * S)
 
-  // Foto circular (izquierda)
-  const PR = 48 * S          // radio foto
-  const PX = 70 * S          // centro X foto
-  const PY = offsetY + HEADER_H + 76 * S  // centro Y foto
+  // Foto circular (centrada)
+  const PR = 56 * S          // radio foto
+  const PX = CW / 2          // centro X foto
+  const PY = offsetY + HEADER_H + 30 * S + PR  // centro Y foto
 
   // Sombra + borde
   ctx.save()
   ctx.shadowColor = 'rgba(37,99,235,0.4)'
-  ctx.shadowBlur = 10 * S
-  ctx.beginPath(); ctx.arc(PX, PY, PR + 3 * S, 0, Math.PI * 2)
+  ctx.shadowBlur = 12 * S
+  ctx.beginPath(); ctx.arc(PX, PY, PR + 4 * S, 0, Math.PI * 2)
   const bg = ctx.createLinearGradient(PX - PR, PY - PR, PX + PR, PY + PR)
   bg.addColorStop(0, '#3b82f6'); bg.addColorStop(1, '#7c3aed')
   ctx.fillStyle = bg; ctx.fill()
@@ -124,38 +124,37 @@ async function drawFront(
   }
   ctx.restore()
 
-  // Datos texto (derecha de la foto)
-  const TX = 145 * S
-  ctx.textAlign = 'left'
+  // Datos texto (centrados debajo de la foto)
+  const textY = PY + PR + 30 * S
+  ctx.textAlign = 'center'
   ctx.fillStyle = '#64748b'
-  ctx.font = `bold ${8 * S}px Inter, sans-serif`
-  ctx.fillText('ALUMNO/A', TX, offsetY + HEADER_H + 46 * S)
+  ctx.font = `bold ${9 * S}px Inter, sans-serif`
+  ctx.fillText('ALUMNO/A', CW / 2, textY)
 
   ctx.fillStyle = '#0f172a'
-  ctx.font = `bold ${15 * S}px Inter, sans-serif`
-  ctx.fillText(apellido.toUpperCase(), TX, offsetY + HEADER_H + 68 * S)
+  ctx.font = `bold ${18 * S}px Inter, sans-serif`
+  ctx.fillText(apellido.toUpperCase(), CW / 2, textY + 24 * S)
 
   ctx.fillStyle = '#1e293b'
-  ctx.font = `${13 * S}px Inter, sans-serif`
-  ctx.fillText(nombre, TX, offsetY + HEADER_H + 88 * S)
+  ctx.font = `${15 * S}px Inter, sans-serif`
+  ctx.fillText(nombre, CW / 2, textY + 44 * S)
 
   // Separador
   ctx.fillStyle = 'rgba(99,148,255,0.25)'
-  ctx.fillRect(TX, offsetY + HEADER_H + 98 * S, CW - TX - 20 * S, 1 * S)
+  ctx.fillRect(40 * S, textY + 60 * S, CW - 80 * S, 1 * S)
 
   // Curso / división
   ctx.fillStyle = '#64748b'
-  ctx.font = `${8 * S}px Inter, sans-serif`
-  ctx.fillText('AÑO Y DIVISIÓN', TX, offsetY + HEADER_H + 116 * S)
+  ctx.font = `${9 * S}px Inter, sans-serif`
+  ctx.fillText('AÑO Y DIVISIÓN', CW / 2, textY + 84 * S)
   ctx.fillStyle = '#1e40af'
-  ctx.font = `bold ${13 * S}px Inter, sans-serif`
-  ctx.fillText(`${grado}  —  División ${division}`, TX, offsetY + HEADER_H + 134 * S)
+  ctx.font = `bold ${15 * S}px Inter, sans-serif`
+  ctx.fillText(`${grado} — Div. ${division}`, CW / 2, textY + 106 * S)
 
   // Footer con ID
-  ctx.textAlign = 'center'
   ctx.fillStyle = '#94a3b8'
-  ctx.font = `${7 * S}px Inter, sans-serif`
-  ctx.fillText(`AsistIDO  ·  ID ${studentIdRef}`, CW / 2, offsetY + CH - 8 * S)
+  ctx.font = `${8 * S}px Inter, sans-serif`
+  ctx.fillText(`ID: ${studentIdRef.slice(0, 8).toUpperCase()}`, CW / 2, offsetY + CH - 16 * S)
 }
 
 // ── Cara TRASERA (QR grande) ───────────────────────────────────────────
@@ -165,8 +164,8 @@ async function drawBack(
   apellido: string,
   nombre: string
 ) {
-  const HEADER_H = 52 * S
-  const QR_S = 140 * S
+  const HEADER_H = 60 * S
+  const QR_S = 180 * S
 
   // Fondo
   roundRect(ctx, 0, 0, CW, CH, R)
@@ -188,25 +187,25 @@ async function drawBack(
 
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'
-  ctx.font = `bold ${13 * S}px Inter, sans-serif`
-  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, 22 * S)
+  ctx.font = `bold ${11 * S}px Inter, sans-serif`
+  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, 26 * S)
   ctx.fillStyle = 'rgba(180,200,255,0.8)'
-  ctx.font = `${9 * S}px Inter, sans-serif`
-  ctx.fillText('Código QR de Asistencia', CW / 2, 37 * S)
+  ctx.font = `${8 * S}px Inter, sans-serif`
+  ctx.fillText('Carnet de Asistencia', CW / 2, 42 * S)
 
   // Label QR
   ctx.fillStyle = '#94a3b8'
-  ctx.font = `bold ${7.5 * S}px Inter, sans-serif`
-  ctx.fillText('ESCANEAR PARA REGISTRAR LLEGADA', CW / 2, HEADER_H + 24 * S)
+  ctx.font = `bold ${9 * S}px Inter, sans-serif`
+  ctx.fillText('CÓDIGO QR', CW / 2, HEADER_H + 36 * S)
 
   // QR grande centrado
   const qrX = (CW - QR_S) / 2
-  const qrY = HEADER_H + 32 * S
+  const qrY = HEADER_H + 54 * S
 
   // Sombra y fondo blanco del QR
   ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 8 * S
-  roundRect(ctx, qrX - 8 * S, qrY - 4 * S, QR_S + 16 * S, QR_S + 12 * S, 8 * S)
+  ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 12 * S
+  roundRect(ctx, qrX - 10 * S, qrY - 10 * S, QR_S + 20 * S, QR_S + 20 * S, 12 * S)
   ctx.fillStyle = '#ffffff'; ctx.fill()
   ctx.shadowBlur = 0
   ctx.restore()
@@ -217,13 +216,17 @@ async function drawBack(
     color: { dark: '#0f172a', light: '#FFFFFF' },
     errorCorrectionLevel: 'H',
   })
-  ctx.drawImage(tmpCanvas, qrX, qrY + 4 * S)
+  ctx.drawImage(tmpCanvas, qrX, qrY)
 
   // Nombre alumno bajo el QR
   ctx.textAlign = 'center'
   ctx.fillStyle = '#0f172a'
-  ctx.font = `bold ${10 * S}px Inter, sans-serif`
-  ctx.fillText(`${apellido.toUpperCase()}, ${nombre}`, CW / 2, qrY + QR_S + 22 * S)
+  ctx.font = `bold ${12 * S}px Inter, sans-serif`
+  ctx.fillText(`${apellido.toUpperCase()}, ${nombre}`, CW / 2, qrY + QR_S + 36 * S)
+  
+  ctx.fillStyle = '#64748b'
+  ctx.font = `${10 * S}px Inter, sans-serif`
+  ctx.fillText('ESCANEAR AL INGRESAR', CW / 2, CH - 24 * S)
 }
 
 // Ref global para pasar studentId a drawFront sin reestructurar todo
@@ -304,7 +307,7 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
       <div style={{ boxShadow: '0 20px 60px rgba(37,99,235,0.25), 0 4px 20px rgba(0,0,0,0.35)', borderRadius: '0.875rem', overflow: 'hidden', maxWidth: '100%', border: '1px solid rgba(99,148,255,0.2)', position: 'relative' }}>
         <canvas
           ref={canvasRef}
-          style={{ display: 'block', maxWidth: '100%', height: 'auto', opacity: rendering ? 0.3 : 1, transition: 'opacity 0.3s' }}
+          style={{ display: 'block', maxWidth: '300px', height: 'auto', opacity: rendering ? 0.3 : 1, transition: 'opacity 0.3s' }}
         />
         {rendering && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -314,8 +317,8 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
       </div>
 
       <div style={{ textAlign: 'center', maxWidth: 400, width: '100%' }}>
-        <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.875rem', lineHeight: 1.6 }}>
-          🖨️ Imprimí la hoja, doblá por la línea punteada y tenés tu carnet doble faz.<br />
+        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.875rem 0', lineHeight: 1.6 }}>
+          🖨️ Imprimí la hoja, doblá por la línea punteada y tenés tu carnet doble faz.
           El QR queda en el dorso y los datos en el frente.
         </p>
         <button
