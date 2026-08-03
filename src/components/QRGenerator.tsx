@@ -109,7 +109,9 @@ async function drawFront(
   ctx.beginPath(); ctx.arc(PX, PY, PR, 0, Math.PI * 2); ctx.clip()
   let drawn = false
   if (photoUrl) {
-    const img = await loadImage(photoUrl)
+    // Si es de Google, forzar alta resolución (por defecto suele traer s96-c)
+    const highResUrl = photoUrl.replace(/=s\d+-c/, '=s512-c')
+    const img = await loadImage(highResUrl)
     if (img) { ctx.drawImage(img, PX - PR, PY - PR, PR * 2, PR * 2); drawn = true }
   }
   if (!drawn) {
