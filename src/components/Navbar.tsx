@@ -1,0 +1,138 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+
+const ROLE_LABEL: Record<string, string> = {
+  estudiante: 'Estudiante',
+  admin: 'Admin',
+  superadmin: 'Superadmin',
+}
+
+const ROLE_BADGE: Record<string, string> = {
+  estudiante: 'badge-primary',
+  admin: 'badge-warning',
+  superadmin: 'badge-purple',
+}
+
+export function Navbar() {
+  const { profile, signOut } = useAuth()
+  const { toastSuccess } = useToast()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleSignOut = async () => {
+    await signOut()
+    toastSuccess('Sesión cerrada correctamente')
+    navigate('/login')
+  }
+
+  if (!profile) return null
+
+  const isAdmin = profile.role === 'admin' || profile.role === 'superadmin'
+
+  const adminLinks = [
+    { to: '/admin', label: 'Inicio', exact: true },
+    { to: '/admin/escanear', label: 'Escanear QR' },
+    { to: '/admin/manual', label: 'Carga Manual' },
+    { to: '/admin/planillas', label: 'Planillas' },
+    { to: '/admin/usuarios', label: 'Usuarios' },
+  ]
+
+  const isActive = (to: string, exact?: boolean) => {
+    if (exact) return location.pathname === to
+    return location.pathname.startsWith(to) && to !== '/admin'
+  }
+
+  return (
+    <nav
+      style={{
+        background: 'rgba(15,23,42,0.95)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(148,163,184,0.1)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}
+    >
+      <div className="page-container" style={{ padding: '0 1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1rem',
+                flexShrink: 0,
+              }}
+            >
+              🏫
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f1f5f9', lineHeight: 1.2 }}>
+                AsistApp
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.2 }}>
+                Don Orione Victoria
+              </div>
+            </div>
+          </div>
+
+          {/* Admin nav links */}
+          {isAdmin && (
+            <div style={{ display: 'flex', gap: '0.25rem' }} className="hidden-mobile">
+              {adminLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    transition: 'all 0.15s',
+                    color: isActive(link.to, link.exact) ? '#60a5fa' : '#94a3b8',
+                    background: isActive(link.to, link.exact) ? 'rgba(59,130,246,0.1)' : 'transparent',
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* User info + logout */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ textAlign: 'right' }} className="hidden-mobile">
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile.email}
+              </div>
+              <span className={`badge ${ROLE_BADGE[profile.role]}`} style={{ fontSize: '0.65rem' }}>
+                {ROLE_LABEL[profile.role]}
+              </span>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="btn btn-secondary btn-sm"
+              id="btn-signout"
+            >
+              Salir
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .hidden-mobile { display: none !important; }
+        }
+      `}</style>
+    </nav>
+  )
+}
