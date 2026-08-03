@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { QRScanner } from '../components/QRScanner'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
@@ -8,25 +8,67 @@ import { useToast } from '../context/ToastContext'
 
 type ScanState = 'scanning' | 'confirming' | 'registering' | 'done'
 
+interface LastFichaje {
+  nombre: string
+  apellido: string
+  hora: string
+}
+
 export function AdminScanner() {
   const { user, profile } = useAuth()
   const { toastSuccess, toastError, toastWarning } = useToast()
+
   const [scanState, setScanState] = useState<ScanState>('scanning')
   const [student, setStudent] = useState<Student | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [lastScannedId, setLastScannedId] = useState<string | null>(null)
+  const [lastFichaje, setLastFichaje] = useState<LastFichaje | null>(null)
 
+  // ── Buscador de alumnos ──────────────────────────────────────────
+  const [search, setSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<Student[]>([])
+  const [searching, setSearching] = useState(false)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value)
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+
+    const trimmed = value.trim()
+    if (trimmed.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true)
+      const { data } = await supabase
+        .from('students')
+        .select('*')
+        .or(`apellido.ilike.%${trimmed}%,nombre.ilike.%${trimmed}%`)
+        .order('apellido')
+        .limit(15)
+      setSearchResults((data ?? []) as Student[])
+      setSearching(false)
+    }, 300)
+  }, [])
+
+  const handleSelectFromSearch = useCallback((s: Student) => {
+    setSearch('')
+    setSearchResults([])
+    setStudent(s)
+    setScanState('confirming')
+  }, [])
+
+  // ── Scan handler ─────────────────────────────────────────────────
   const handleScan = useCallback(
     async (raw: string) => {
       if (scanState !== 'scanning') return
 
       let studentId: string | null = null
-
-      // Try to parse JSON { sid: "uuid" } or fallback to raw UUID
       try {
         const parsed = JSON.parse(raw)
-        if (parsed?.sid) studentId = parsed.sid
-        else studentId = raw.trim()
+        studentId = parsed?.sid ?? raw.trim()
       } catch {
         studentId = raw.trim()
       }
@@ -36,10 +78,8 @@ export function AdminScanner() {
         return
       }
 
-      // Debounce same QR
       if (studentId === lastScannedId) return
       setLastScannedId(studentId)
-
       setScanState('confirming')
 
       const { data, error } = await supabase
@@ -60,6 +100,7 @@ export function AdminScanner() {
     [scanState, lastScannedId, toastWarning, toastError]
   )
 
+  // ── Confirm & register ───────────────────────────────────────────
   const handleConfirm = async () => {
     if (!student || !user || !profile) return
     setScanState('registering')
@@ -69,7 +110,6 @@ export function AdminScanner() {
       metodo: 'qr',
       registrado_por: user.id,
       registrado_por_email: profile.email,
-      // El servidor completa: nombre, apellido, grado, division, fecha, hora, turno
     })
 
     if (error) {
@@ -82,13 +122,22 @@ export function AdminScanner() {
       return
     }
 
+    // Guardar último fichaje exitoso
+    const ahora = new Date().toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+    setLastFichaje({ nombre: student.nombre, apellido: student.apellido, hora: ahora })
+
     toastSuccess(`✅ Registrado — ${student.nombre} ${student.apellido}`)
     setScanState('done')
+
     setTimeout(() => {
       setScanState('scanning')
       setStudent(null)
       setLastScannedId(null)
-    }, 2500)
+    }, 2000)
   }
 
   const handleCancel = () => {
@@ -100,14 +149,44 @@ export function AdminScanner() {
   return (
     <>
       <Navbar />
-      <div className="page-container" style={{ maxWidth: 600 }}>
-        <div className="page-header">
-          <h1 className="page-title">📷 Escanear QR</h1>
-          <p className="page-subtitle">
-            Apuntá la cámara al código QR del alumno para registrar su llegada tarde.
-          </p>
+      <div className="page-container" style={{ maxWidth: 680 }}>
+
+        {/* ── Header con indicador de último fichaje ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+          <div>
+            <h1 className="page-title">📷 Escanear QR</h1>
+            <p className="page-subtitle">
+              Apuntá la cámara al QR del alumno o buscalo por nombre.
+            </p>
+          </div>
+
+          {lastFichaje && (
+            <div
+              className="animate-fade-in"
+              style={{
+                background: 'rgba(22,163,74,0.12)',
+                border: '1px solid rgba(74,222,128,0.25)',
+                borderRadius: '0.75rem',
+                padding: '0.625rem 1rem',
+                fontSize: '0.8rem',
+                lineHeight: 1.4,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ color: '#4ade80', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
+                ✅ Último fichaje
+              </div>
+              <div style={{ color: '#f1f5f9', fontWeight: 600 }}>
+                {lastFichaje.apellido}, {lastFichaje.nombre}
+              </div>
+              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                🕐 {lastFichaje.hora}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* ── Error de cámara ── */}
         {cameraError && (
           <div
             className="glass-card"
@@ -123,62 +202,125 @@ export function AdminScanner() {
           </div>
         )}
 
-        {/* Scanner */}
-        {(scanState === 'scanning' || scanState === 'confirming' || scanState === 'registering') && (
-          <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              {scanState === 'scanning' ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      background: '#22c55e',
-                      borderRadius: '50%',
-                      animation: 'pulse 1.5s infinite',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ fontSize: '0.85rem', color: '#4ade80' }}>Cámara activa — esperando QR...</span>
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
-                  Cámara pausada
-                </div>
-              )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
+
+          {/* ── Scanner + Buscador ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+
+            {/* Scanner */}
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {scanState === 'scanning' ? (
+                  <>
+                    <div className="pulse-dot" />
+                    <span style={{ fontSize: '0.8rem', color: '#4ade80' }}>Cámara activa</span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Cámara pausada</span>
+                )}
+              </div>
+              <QRScanner
+                onScan={handleScan}
+                onError={(e) => setCameraError(e)}
+                active={scanState === 'scanning'}
+              />
             </div>
 
-            <QRScanner
-              onScan={handleScan}
-              onError={(e) => setCameraError(e)}
-              active={scanState === 'scanning'}
-            />
+            {/* Buscador manual */}
+            <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                🔍 Buscar alumno
+              </div>
+              <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                <input
+                  id="buscar-alumno-scanner"
+                  type="text"
+                  className="input-base"
+                  placeholder="Apellido o nombre..."
+                  value={search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  autoComplete="off"
+                />
+                {searching && (
+                  <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}>
+                    <div className="spinner" />
+                  </div>
+                )}
+              </div>
 
-            <style>{`
-              @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.4; }
-              }
-            `}</style>
+              {/* Resultados */}
+              <div style={{ flex: 1, overflowY: 'auto', maxHeight: '280px' }}>
+                {searchResults.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {searchResults.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSelectFromSearch(s)}
+                        disabled={scanState === 'confirming' || scanState === 'registering'}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          padding: '0.625rem 0.75rem',
+                          background: 'rgba(15,23,42,0.4)',
+                          border: '1px solid rgba(148,163,184,0.08)',
+                          borderRadius: '0.5rem',
+                          cursor: 'pointer',
+                          color: '#cbd5e1',
+                          fontSize: '0.875rem',
+                          transition: 'all 0.15s',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(37,99,235,0.15)'
+                          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(59,130,246,0.3)'
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(15,23,42,0.4)'
+                          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(148,163,184,0.08)'
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                          {s.apellido}, {s.nombre}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {s.grado} — Div. {s.division}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : search.trim().length >= 2 && !searching ? (
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', padding: '0.5rem 0' }}>
+                    Sin resultados para "{search}"
+                  </p>
+                ) : search.trim().length < 2 ? (
+                  <p style={{ fontSize: '0.78rem', color: '#475569', padding: '0.5rem 0' }}>
+                    Escribí al menos 2 letras para buscar.
+                  </p>
+                ) : null}
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Confirmation card */}
-        {(scanState === 'confirming' || scanState === 'registering') && student && (
-          <div className="glass-card animate-fade-in" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Confirmar registro
-            </h3>
+          {/* ── Confirmación ── */}
+          {(scanState === 'confirming' || scanState === 'registering') && student && (
+            <div className="glass-card animate-fade-in" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Confirmar registro
+              </h3>
 
-            <div
-              style={{
-                background: 'rgba(15,23,42,0.5)',
-                borderRadius: '0.75rem',
-                padding: '1.25rem',
-                marginBottom: '1.25rem',
-              }}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div
+                style={{
+                  background: 'rgba(15,23,42,0.5)',
+                  borderRadius: '0.75rem',
+                  padding: '1.25rem',
+                  marginBottom: '1.25rem',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.75rem',
+                }}
+              >
                 {[
                   { label: 'Nombre', value: student.nombre },
                   { label: 'Apellido', value: student.apellido },
@@ -189,60 +331,60 @@ export function AdminScanner() {
                     <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {item.label}
                     </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 600, color: '#f1f5f9', marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f1f5f9', marginTop: '0.2rem' }}>
                       {item.value}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                id="btn-confirmar-llegada"
-                onClick={handleConfirm}
-                disabled={scanState === 'registering'}
-                className="btn btn-success"
-                style={{ flex: 1 }}
-              >
-                {scanState === 'registering' ? (
-                  <><div className="spinner" /> Registrando...</>
-                ) : (
-                  '✅ Confirmar llegada tarde'
-                )}
-              </button>
-              <button
-                onClick={handleCancel}
-                disabled={scanState === 'registering'}
-                className="btn btn-secondary"
-                id="btn-cancelar-scan"
-              >
-                Cancelar
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  id="btn-confirmar-llegada"
+                  onClick={handleConfirm}
+                  disabled={scanState === 'registering'}
+                  className="btn btn-success"
+                  style={{ flex: 1 }}
+                >
+                  {scanState === 'registering' ? (
+                    <><div className="spinner" /> Registrando...</>
+                  ) : (
+                    '✅ Confirmar llegada tarde'
+                  )}
+                </button>
+                <button
+                  id="btn-cancelar-scan"
+                  onClick={handleCancel}
+                  disabled={scanState === 'registering'}
+                  className="btn btn-secondary"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Done */}
-        {scanState === 'done' && (
-          <div
-            className="glass-card animate-fade-in"
-            style={{
-              padding: '2rem',
-              textAlign: 'center',
-              borderColor: 'rgba(74,222,128,0.3)',
-              background: 'rgba(22,163,74,0.1)',
-            }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>✅</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#4ade80', marginBottom: '0.5rem' }}>
-              Llegada registrada
+          {/* ── Éxito ── */}
+          {scanState === 'done' && (
+            <div
+              className="glass-card animate-fade-in"
+              style={{
+                padding: '2rem',
+                textAlign: 'center',
+                borderColor: 'rgba(74,222,128,0.3)',
+                background: 'rgba(22,163,74,0.1)',
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>✅</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#4ade80', marginBottom: '0.5rem' }}>
+                Llegada registrada
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                Preparando siguiente escaneo...
+              </div>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Preparando para el siguiente escaneo...
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   )
