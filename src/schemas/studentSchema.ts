@@ -28,7 +28,7 @@ export const manualLlegadaSchema = z.object({
 export type ManualLlegadaData = z.infer<typeof manualLlegadaSchema>
 
 export const GRADOS = [
-  '1° año', '2° año', '3° año', '4° año', '5° año', '6° año'
+  '1° año', '2° año', '3° año', '4° año', '5° año', '6° año', '7° año'
 ]
 
-export const DIVISIONES = ['A', 'B', 'C', 'D', 'E']
+export const DIVISIONES = ['A', 'B', 'C', 'D']

@@ -123,7 +123,7 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
 
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 14px Inter, system-ui, sans-serif'
-    ctx.fillText('ESCUELA TÉCNICA DON ORIONE', W / 2, 72)
+    ctx.fillText('INSTITUTO DON ORIONE', W / 2, 72)
 
     ctx.fillStyle = 'rgba(148, 179, 255, 0.85)'
     ctx.font = '11px Inter, system-ui, sans-serif'
