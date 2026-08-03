@@ -64,8 +64,9 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  -- Enforce domain restriction
-  if new.email not like '%@donorionevictoria.com.ar' then
+  -- Enforce domain restriction (with explicit superadmin whitelist)
+  if new.email not like '%@donorionevictoria.com.ar'
+     and new.email != 'asistenciaido@gmail.com' then
     raise exception 'Dominio no autorizado: solo se permiten cuentas @donorionevictoria.com.ar';
   end if;
 
@@ -74,7 +75,7 @@ begin
     new.id,
     new.email,
     case
-      when new.email = 'asistencia@donorionevictoria.com.ar'
+      when new.email in ('asistencia@donorionevictoria.com.ar', 'asistenciaido@gmail.com')
       then 'superadmin'::public.user_role
       else 'estudiante'::public.user_role
     end
