@@ -33,7 +33,6 @@ export function Navbar() {
   const adminLinks = [
     { to: '/admin', label: 'Inicio', exact: true },
     { to: '/admin/escanear', label: 'Escanear QR' },
-    { to: '/admin/manual', label: 'Carga Manual' },
     { to: '/admin/planillas', label: 'Planillas' },
     { to: '/admin/usuarios', label: 'Usuarios' },
   ]

@@ -9,7 +9,6 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const EstudianteDashboard = lazy(() => import('./pages/EstudianteDashboard').then(m => ({ default: m.EstudianteDashboard })))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
 const AdminScanner = lazy(() => import('./pages/AdminScanner').then(m => ({ default: m.AdminScanner })))
-const AdminManual = lazy(() => import('./pages/AdminManual').then(m => ({ default: m.AdminManual })))
 const Planillas = lazy(() => import('./pages/Planillas').then(m => ({ default: m.Planillas })))
 const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios').then(m => ({ default: m.GestionUsuarios })))
 
@@ -72,14 +71,6 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
                     <AdminScanner />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/manual"
-                element={
-                  <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
-                    <AdminManual />
                   </ProtectedRoute>
                 }
               />
