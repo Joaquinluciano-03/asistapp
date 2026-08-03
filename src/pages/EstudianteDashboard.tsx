@@ -17,6 +17,12 @@ export function EstudianteDashboard() {
   const [saving, setSaving] = useState(false)
   const [showQR, setShowQR] = useState(false)
 
+  // Foto de perfil de Google (viene en los metadatos de la sesión OAuth)
+  const photoUrl: string | null =
+    (user?.user_metadata?.avatar_url as string | undefined) ??
+    (user?.user_metadata?.picture as string | undefined) ??
+    null
+
   const [form, setForm] = useState<StudentFormData>({
     nombre: '',
     apellido: '',
@@ -243,6 +249,7 @@ export function EstudianteDashboard() {
                 apellido={student.apellido}
                 grado={student.grado}
                 division={student.division}
+                photoUrl={photoUrl}
               />
             </div>
           )}
