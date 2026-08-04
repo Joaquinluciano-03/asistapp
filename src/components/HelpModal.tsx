@@ -1,0 +1,208 @@
+import { useState } from 'react'
+
+interface HelpModalProps {
+  role: 'admin' | 'superadmin' | 'estudiante'
+  onClose: () => void
+}
+
+interface Section {
+  icon: string
+  title: string
+  content: React.ReactNode
+}
+
+// ── Secciones para ADMIN / SUPERADMIN ────────────────────────────────
+const adminSections: Section[] = [
+  {
+    icon: '📷',
+    title: 'Escanear QR',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Ingresá a <strong>Escanear QR</strong> desde el menú superior.</li>
+        <li>Apuntá la cámara al carnet del alumno hasta que se detecte automáticamente.</li>
+        <li>Verificá que los datos mostrados correspondan al alumno.</li>
+        <li>Presioná <strong>Confirmar llegada tarde</strong> para registrar.</li>
+        <li>Si el QR no funciona, buscá al alumno por nombre usando el buscador manual.</li>
+      </ol>
+    ),
+  },
+  {
+    icon: '📋',
+    title: 'Planillas de asistencia',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Ingresá a <strong>Planillas</strong> desde el menú.</li>
+        <li>Filtrá por fecha, año o división usando los controles.</li>
+        <li>La tabla muestra cada llegada tarde con hora, método y responsable del registro.</li>
+        <li>Usá <strong>Exportar Excel</strong> para descargar el informe del período filtrado.</li>
+      </ol>
+    ),
+  },
+  {
+    icon: '👥',
+    title: 'Gestión de usuarios',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Ingresá a <strong>Usuarios</strong> desde el menú.</li>
+        <li>Podés cambiar el rol de un usuario (Estudiante ↔ Admin).</li>
+        <li>Para <strong>editar datos de un alumno</strong> (nombre, apellido, año, división): presioná el botón ✏️ en la fila.</li>
+        <li>Para <strong>habilitar que un alumno vuelva a ingresar sus datos</strong>: presioná 🔄 y confirmá el reinicio.</li>
+        <li>Para <strong>eliminar</strong> un usuario: usá el botón 🗑️ (acción irreversible).</li>
+      </ol>
+    ),
+  },
+  {
+    icon: '✍️',
+    title: 'Registro manual de llegada tarde',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Ingresá a <strong>Registro Manual</strong> desde el panel de inicio.</li>
+        <li>Buscá al alumno por nombre o apellido.</li>
+        <li>Seleccionalo y confirmá el registro.</li>
+        <li>Este método queda registrado con el método <em>"manual"</em> en las planillas.</li>
+      </ol>
+    ),
+  },
+]
+
+// ── Secciones para ESTUDIANTE ─────────────────────────────────────────
+const studentSections: Section[] = [
+  {
+    icon: '📝',
+    title: 'Ingreso de datos personales',
+    content: (
+      <>
+        <p style={{ margin: '0 0 0.6rem', fontSize: '0.83rem', color: '#cbd5e1', lineHeight: 1.7 }}>
+          Al iniciar sesión por primera vez, debés completar tu nombre, apellido, año y división.
+        </p>
+        <ul style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+          <li>Ingresá tu <strong>nombre y apellido</strong> tal como figuran en el legajo escolar.</li>
+          <li>Seleccioná el <strong>año</strong> que estás cursando (1ro, 2do, etc.).</li>
+          <li>Seleccioná tu <strong>división</strong> (A, B, C, etc.).</li>
+          <li>Revisá todo con cuidado y presioná <strong>"Guardar y generar QR"</strong>.</li>
+          <li>Un modal de confirmación te mostrará los datos — leé bien antes de confirmar.</li>
+        </ul>
+        <div style={{ marginTop: '0.875rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: '0.5rem', padding: '0.75rem 0.875rem', fontSize: '0.8rem', color: '#fde047', lineHeight: 1.65 }}>
+          ⚠️ <strong>Solo podés ingresar tus datos una sola vez.</strong> Una vez guardados, quedan bloqueados y no podrás modificarlos por tu cuenta.
+        </div>
+      </>
+    ),
+  },
+  {
+    icon: '🔄',
+    title: 'Si cometiste un error en tus datos',
+    content: (
+      <>
+        <p style={{ margin: '0 0 0.6rem', fontSize: '0.83rem', color: '#cbd5e1', lineHeight: 1.7 }}>
+          Si te equivocaste en algún dato y ya confirmaste el guardado, <strong>no podés modificarlos vos mismo</strong>. Debés:
+        </p>
+        <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+          <li>Dirigirte a un <strong>preceptor o administrador del sistema</strong>.</li>
+          <li>Solicitarle que corrija tus datos (nombre, apellido, año o división).</li>
+          <li>O pedirle que <strong>reinicie tus datos</strong> para que puedas volver a ingresarlos desde cero.</li>
+          <li>Una vez que el administrador realice el cambio, tu QR se actualizará automáticamente.</li>
+        </ol>
+      </>
+    ),
+  },
+  {
+    icon: '⬇️',
+    title: 'Cómo descargar e imprimir tu carnet',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Una vez cargados tus datos, tu carnet QR aparece en pantalla.</li>
+        <li>Presioná el botón <strong>"Descargar Carnet (Alta Resolución)"</strong>.</li>
+        <li>Se descarga un archivo <em>.png</em> con el carnet listo para imprimir.</li>
+        <li>Imprimí la hoja en tamaño A4 o carta.</li>
+        <li>Doblá la hoja por la línea de puntos (✂ Doblar aquí).</li>
+        <li>Quedará un carnet doble faz: tus datos en el frente y el código QR en el dorso.</li>
+        <li>Podés plastificarlo para mayor durabilidad.</li>
+      </ol>
+    ),
+  },
+  {
+    icon: '📲',
+    title: 'Cómo usar el carnet al llegar tarde',
+    content: (
+      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+        <li>Al llegar tarde al colegio, presentate en preceptoría.</li>
+        <li>Mostrá el lado del <strong>código QR</strong> de tu carnet al preceptor.</li>
+        <li>El preceptor escaneará el QR con el sistema.</li>
+        <li>Confirmará tu llegada y quedará registrada automáticamente con hora y fecha.</li>
+        <li>Si no tenés el carnet, el preceptor puede buscarte manualmente por nombre.</li>
+      </ol>
+    ),
+  },
+  {
+    icon: '⚠️',
+    title: 'Advertencia — Uso responsable',
+    content: (
+      <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.875rem', fontSize: '0.83rem', color: '#fca5a5', lineHeight: 1.75 }}>
+        <strong style={{ display: 'block', marginBottom: '0.4rem', color: '#f87171', fontSize: '0.85rem' }}>🚨 Aviso importante</strong>
+        Cualquier intento de <strong>falsificar datos personales</strong>, <strong>prestar el carnet a otro alumno</strong>, <strong>alterar registros de asistencia</strong> o cualquier otra forma de fraude será considerado una <strong>falta grave</strong> y será motivo de <strong>sanción disciplinaria</strong> conforme al reglamento del Instituto Don Orione. El sistema registra el método, horario y responsable de cada registro.
+      </div>
+    ),
+  },
+]
+
+// ── Componente principal ──────────────────────────────────────────────
+export function HelpModal({ role, onClose }: HelpModalProps) {
+  const [openIdx, setOpenIdx] = useState<number | null>(0)
+
+  const isAdmin = role === 'admin' || role === 'superadmin'
+  const sections = isAdmin ? adminSections : studentSections
+  const title = isAdmin ? '📖 Manual del Administrador' : '📖 Manual del Alumno'
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500, padding: '1rem' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="animate-fade-in"
+        style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '1rem', width: '100%', maxWidth: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}
+      >
+        {/* Header */}
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#f1f5f9' }}>{title}</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.15rem' }}>Instituto Don Orione — Victoria</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: 'rgba(148,163,184,0.1)', border: 'none', borderRadius: '0.5rem', width: 32, height: 32, cursor: 'pointer', color: '#94a3b8', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          >✕</button>
+        </div>
+
+        {/* Content — scrollable */}
+        <div style={{ overflowY: 'auto', padding: '1rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {sections.map((sec, idx) => (
+            <div
+              key={idx}
+              style={{ border: `1px solid ${openIdx === idx ? 'rgba(59,130,246,0.3)' : 'rgba(148,163,184,0.08)'}`, borderRadius: '0.75rem', overflow: 'hidden', transition: 'border-color 0.2s' }}
+            >
+              {/* Accordion header */}
+              <button
+                onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', background: openIdx === idx ? 'rgba(59,130,246,0.07)' : 'rgba(15,23,42,0.6)', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                  <span style={{ fontSize: '1rem' }}>{sec.icon}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: openIdx === idx ? '#93c5fd' : '#f1f5f9' }}>{sec.title}</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', transform: openIdx === idx ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
+              </button>
+
+              {/* Accordion body */}
+              {openIdx === idx && (
+                <div style={{ padding: '0.875rem 1rem 1rem', background: 'rgba(15,23,42,0.3)', borderTop: '1px solid rgba(148,163,184,0.07)' }}>
+                  {sec.content}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
