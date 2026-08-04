@@ -86,7 +86,9 @@ export function Navbar() {
 
             {/* Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '9px', background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', flexShrink: 0 }}>🏫</div>
+              <div style={{ width: 34, height: 34, borderRadius: '9px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/favicon.ico" alt="Logo Don Orione" style={{ width: 34, height: 34, objectFit: 'contain' }} />
+              </div>
               <div className="navbar-brand-text">
                 <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#f1f5f9', lineHeight: 1.2, letterSpacing: '-0.02em' }}>AsistIDO</div>
                 <div style={{ fontSize: '0.65rem', color: '#64748b', lineHeight: 1.2 }}>Don Orione Victoria</div>

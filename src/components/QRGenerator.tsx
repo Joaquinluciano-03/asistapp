@@ -94,6 +94,20 @@ async function drawFront(
   ctx.fillStyle = ag
   ctx.fillRect(0, offsetY + HEADER_H - 2 * S, CW, 2 * S)
 
+  // Logo en el header (frente)
+  const logo = await loadImage('/favicon.ico')
+  if (logo) {
+    const lSize = 36 * S
+    const lX = 10 * S
+    const lY = offsetY + (HEADER_H - lSize) / 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(lX + lSize / 2, lY + lSize / 2, lSize / 2, 0, Math.PI * 2)
+    ctx.clip()
+    ctx.drawImage(logo, lX, lY, lSize, lSize)
+    ctx.restore()
+  }
+
   // Texto header
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'
@@ -209,6 +223,20 @@ async function drawBack(
   ctx.fillStyle = 'rgba(180,200,255,0.8)'
   ctx.font = `${8 * S}px Inter, sans-serif`
   ctx.fillText('Carnet de Asistencia', CW / 2, 42 * S)
+
+  // Logo en el header (trasera)
+  const logo = await loadImage('/favicon.ico')
+  if (logo) {
+    const lSize = 36 * S
+    const lX = 10 * S
+    const lY = (HEADER_H - lSize) / 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(lX + lSize / 2, lY + lSize / 2, lSize / 2, 0, Math.PI * 2)
+    ctx.clip()
+    ctx.drawImage(logo, lX, lY, lSize, lSize)
+    ctx.restore()
+  }
 
   // Label QR
   ctx.fillStyle = '#94a3b8'
