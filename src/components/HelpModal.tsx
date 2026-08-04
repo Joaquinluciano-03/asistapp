@@ -113,11 +113,9 @@ const studentSections: Section[] = [
     title: 'Cómo usar el carnet al llegar tarde',
     content: (
       <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
-        <li>Al llegar tarde al colegio, presentate en preceptoría.</li>
-        <li>Mostrá el lado del <strong>código QR</strong> de tu carnet al preceptor.</li>
+        <li>Al llegar tarde al colegio, mostrá el lado del <strong>código QR</strong> de tu carnet al preceptor.</li>
         <li>El preceptor escaneará el QR con el sistema.</li>
-        <li>Confirmará tu llegada y quedará registrada automáticamente con hora y fecha.</li>
-        <li>Si no tenés el carnet, el preceptor puede buscarte manualmente por nombre.</li>
+        <li>Confirmará tu llegada y quedará registrada automáticamente.</li>
       </ol>
     ),
   },
@@ -127,7 +125,7 @@ const studentSections: Section[] = [
     content: (
       <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.875rem', fontSize: '0.83rem', color: '#fca5a5', lineHeight: 1.75 }}>
         <strong style={{ display: 'block', marginBottom: '0.4rem', color: '#f87171', fontSize: '0.85rem' }}>🚨 Aviso importante</strong>
-        Cualquier intento de <strong>falsificar datos personales</strong>, <strong>prestar el carnet a otro alumno</strong>, <strong>alterar registros de asistencia</strong> o cualquier otra forma de fraude será considerado una <strong>falta grave</strong> y será motivo de <strong>sanción disciplinaria</strong> conforme al reglamento del Instituto Don Orione. El sistema registra el método, horario y responsable de cada registro.
+        Cualquier intento de <strong>falsificar datos personales</strong>, <strong>prestar el carnet a otro alumno</strong>, <strong>alterar registros de asistencia</strong> o cualquier otra forma de fraude será considerado una <strong>falta grave</strong> y será motivo de <strong>sanción disciplinaria</strong> conforme al reglamento del Instituto Don Orione.
       </div>
     ),
   },
