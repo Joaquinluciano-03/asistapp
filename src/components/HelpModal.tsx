@@ -51,18 +51,6 @@ const adminSections: Section[] = [
       </ol>
     ),
   },
-  {
-    icon: '✍️',
-    title: 'Registro manual de llegada tarde',
-    content: (
-      <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
-        <li>Ingresá a <strong>Registro Manual</strong> desde el panel de inicio.</li>
-        <li>Buscá al alumno por nombre o apellido.</li>
-        <li>Seleccionalo y confirmá el registro.</li>
-        <li>Este método queda registrado con el método <em>"manual"</em> en las planillas.</li>
-      </ol>
-    ),
-  },
 ]
 
 // ── Secciones para ESTUDIANTE ─────────────────────────────────────────
