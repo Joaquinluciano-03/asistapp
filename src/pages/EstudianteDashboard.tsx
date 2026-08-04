@@ -7,6 +7,7 @@ import { QRGenerator } from '../components/QRGenerator'
 import { studentSchema, GRADOS, DIVISIONES } from '../schemas/studentSchema'
 import type { StudentFormData } from '../schemas/studentSchema'
 import { Navbar } from '../components/Navbar'
+import { HelpModal } from '../components/HelpModal'
 
 export function EstudianteDashboard() {
   const { user, profile } = useAuth()
@@ -17,6 +18,7 @@ export function EstudianteDashboard() {
   const [saving, setSaving] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showInitialHelp, setShowInitialHelp] = useState(false)
 
   // Foto de perfil de Google (viene en los metadatos de la sesión OAuth)
   const photoUrl: string | null =
@@ -52,6 +54,9 @@ export function EstudianteDashboard() {
           })
           setShowQR(true)
         }
+      } catch (e) {
+        // Error o sin resultados
+        setShowInitialHelp(true)
       } finally {
         setLoadingData(false)
       }
@@ -234,6 +239,10 @@ export function EstudianteDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {showInitialHelp && (
+        <HelpModal role={profile?.role === 'estudiante' ? 'estudiante' : 'estudiante'} onClose={() => setShowInitialHelp(false)} />
       )}
     </>
   )
