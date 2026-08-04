@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -35,9 +35,26 @@ export function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [showHelp, setShowHelp] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const clock = useDigitalClock()
 
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Cerrar menú al cambiar ruta
+  useEffect(() => { setMenuOpen(false) }, [location.pathname])
+
   const handleSignOut = async () => {
+    setMenuOpen(false)
     await signOut()
     toastSuccess('Sesión cerrada correctamente')
     navigate('/login')
@@ -48,10 +65,10 @@ export function Navbar() {
   const isAdmin = profile.role === 'admin' || profile.role === 'superadmin'
 
   const adminLinks = [
-    { to: '/admin', label: 'Inicio', exact: true },
-    { to: '/admin/escanear', label: 'Escanear QR' },
-    { to: '/admin/planillas', label: 'Planillas' },
-    { to: '/admin/usuarios', label: 'Usuarios' },
+    { to: '/admin', label: '🏠 Inicio', exact: true },
+    { to: '/admin/escanear', label: '📷 Escanear QR' },
+    { to: '/admin/planillas', label: '📋 Planillas' },
+    { to: '/admin/usuarios', label: '👥 Usuarios' },
   ]
 
   const isActive = (to: string, exact?: boolean) => {
@@ -61,67 +78,30 @@ export function Navbar() {
 
   return (
     <>
-      <nav
-        style={{
-          background: 'rgba(15,23,42,0.95)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(148,163,184,0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <div className="page-container" style={{ padding: '0 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', position: 'relative' }}>
+      <nav style={{ background: 'rgba(15,23,42,0.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(148,163,184,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.25rem' }}>
+
+          {/* ── Fila principal ── */}
+          <div style={{ display: 'flex', alignItems: 'center', height: '60px', gap: '0.75rem' }}>
+
             {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1rem',
-                  flexShrink: 0,
-                }}
-              >
-                🏫
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#f1f5f9', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-                  AsistIDO
-                </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.2 }}>
-                  Don Orione Victoria
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '9px', background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', flexShrink: 0 }}>🏫</div>
+              <div className="navbar-brand-text">
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#f1f5f9', lineHeight: 1.2, letterSpacing: '-0.02em' }}>AsistIDO</div>
+                <div style={{ fontSize: '0.65rem', color: '#64748b', lineHeight: 1.2 }}>Don Orione Victoria</div>
               </div>
             </div>
 
-            {/* ── Reloj digital centrado (solo admin) ── */}
+            {/* Links de navegación (solo desktop, solo admin) */}
             {isAdmin && (
-              <div
-                className="hidden-mobile"
-                style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', lineHeight: 1.1, userSelect: 'none' }}
-              >
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '0.08em', color: '#f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
-                  {clock.hh}<span style={{ opacity: 0.5, animation: 'clockBlink 1s step-end infinite' }}>:</span>{clock.mm}<span style={{ opacity: 0.5, animation: 'clockBlink 1s step-end infinite' }}>:</span>{clock.ss}
-                </div>
-                <div style={{ fontSize: '0.62rem', color: '#475569', fontWeight: 600, textTransform: 'capitalize', letterSpacing: '0.04em', marginTop: '0.1rem' }}>{clock.fecha}</div>
-              </div>
-            )}
-
-            {/* Admin nav links */}
-            {isAdmin && (
-              <div style={{ display: 'flex', gap: '0.25rem' }} className="hidden-mobile">
+              <div className="navbar-links-desktop">
                 {adminLinks.map((link) => (
                   <Link
                     key={link.to}
                     to={link.to}
                     style={{
-                      padding: '0.4rem 0.75rem',
+                      padding: '0.35rem 0.7rem',
                       borderRadius: '0.5rem',
                       fontSize: '0.8rem',
                       fontWeight: 500,
@@ -129,48 +109,136 @@ export function Navbar() {
                       transition: 'all 0.15s',
                       color: isActive(link.to, link.exact) ? '#60a5fa' : '#94a3b8',
                       background: isActive(link.to, link.exact) ? 'rgba(59,130,246,0.1)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {link.label}
+                    {link.label.replace(/^[^\s]+\s/, '')}
                   </Link>
                 ))}
               </div>
             )}
 
-            {/* User info + logout */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ textAlign: 'right' }} className="hidden-mobile">
-                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {profile.email}
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* ── Reloj digital (siempre visible para admin) ── */}
+            {isAdmin && (
+              <div style={{ textAlign: 'center', lineHeight: 1.15, userSelect: 'none', flexShrink: 0 }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', color: '#f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
+                  {clock.hh}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block' }}>:</span>{clock.mm}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block' }}>:</span>{clock.ss}
                 </div>
-                <span className={`badge ${ROLE_BADGE[profile.role]}`} style={{ fontSize: '0.65rem' }}>
-                  {ROLE_LABEL[profile.role]}
-                </span>
+                <div style={{ fontSize: '0.6rem', color: '#475569', fontWeight: 600, textTransform: 'capitalize', letterSpacing: '0.03em' }}>{clock.fecha}</div>
               </div>
+            )}
+
+            {/* Botones desktop (solo admin) */}
+            {isAdmin && (
+              <div className="navbar-actions-desktop">
+                <span className={`badge ${ROLE_BADGE[profile.role]}`} style={{ fontSize: '0.62rem' }}>{ROLE_LABEL[profile.role]}</span>
+                <button onClick={() => setShowHelp(true)} className="btn btn-secondary btn-sm" style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: 600 }}>Ayuda</button>
+                <button onClick={handleSignOut} className="btn btn-secondary btn-sm" id="btn-signout">Salir</button>
+              </div>
+            )}
+
+            {/* Botones desktop (estudiante) */}
+            {!isAdmin && (
+              <div className="navbar-actions-desktop">
+                <button onClick={() => setShowHelp(true)} className="btn btn-secondary btn-sm" style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: 600 }}>Ayuda</button>
+                <button onClick={handleSignOut} className="btn btn-secondary btn-sm" id="btn-signout">Salir</button>
+              </div>
+            )}
+
+            {/* ── Hamburguesa (solo mobile) ── */}
+            <div ref={menuRef} className="navbar-hamburger-wrap">
               <button
-                onClick={() => setShowHelp(true)}
-                className="btn btn-secondary btn-sm"
-                style={{ background: '#f1f5f9', color: '#0f172a', borderColor: '#e2e8f0', fontWeight: 600 }}
+                onClick={() => setMenuOpen((v) => !v)}
+                style={{ background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '0.5rem', width: 38, height: 38, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer', flexShrink: 0 }}
+                aria-label="Menú"
               >
-                Ayuda
+                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#60a5fa' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none' }} />
+                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? 'transparent' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s' }} />
+                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#60a5fa' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }} />
               </button>
-              <button
-                onClick={handleSignOut}
-                className="btn btn-secondary btn-sm"
-                id="btn-signout"
-              >
-                Salir
-              </button>
+
+              {/* Dropdown menu */}
+              {menuOpen && (
+                <div
+                  className="animate-fade-in"
+                  style={{ position: 'absolute', top: '56px', right: '1rem', width: 230, background: 'rgba(10,16,35,0.98)', border: '1px solid rgba(99,148,255,0.15)', borderRadius: '0.875rem', boxShadow: '0 16px 48px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', zIndex: 200, overflow: 'hidden' }}
+                >
+                  {/* Info usuario */}
+                  <div style={{ padding: '0.875rem 1rem', borderBottom: '1px solid rgba(99,148,255,0.1)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.email}</div>
+                      <span className={`badge ${ROLE_BADGE[profile.role]}`} style={{ fontSize: '0.6rem', marginTop: '0.2rem' }}>{ROLE_LABEL[profile.role]}</span>
+                    </div>
+                  </div>
+
+                  {/* Links admin */}
+                  {isAdmin && (
+                    <div style={{ padding: '0.5rem' }}>
+                      {adminLinks.map((link) => (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.65rem 0.75rem',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 500,
+                            textDecoration: 'none',
+                            color: isActive(link.to, link.exact) ? '#60a5fa' : '#cbd5e1',
+                            background: isActive(link.to, link.exact) ? 'rgba(59,130,246,0.12)' : 'transparent',
+                            transition: 'background 0.15s',
+                          }}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Acciones */}
+                  <div style={{ padding: '0.5rem', borderTop: '1px solid rgba(99,148,255,0.08)' }}>
+                    <button
+                      onClick={() => { setMenuOpen(false); setShowHelp(true) }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 500, color: '#cbd5e1', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    >
+                      📖 Ayuda
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 500, color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    >
+                      🚪 Cerrar sesión
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <style>{`
-          @media (max-width: 640px) {
-            .hidden-mobile { display: none !important; }
+          /* Desktop: mostrar links y acciones */
+          .navbar-links-desktop { display: flex; gap: 0.2rem; }
+          .navbar-actions-desktop { display: flex; align-items: center; gap: 0.5rem; }
+          .navbar-hamburger-wrap { display: none; position: relative; }
+          .navbar-brand-text { display: block; }
+
+          /* Mobile: ocultar links desktop, mostrar hamburguesa */
+          @media (max-width: 700px) {
+            .navbar-links-desktop { display: none !important; }
+            .navbar-actions-desktop { display: none !important; }
+            .navbar-hamburger-wrap { display: block; }
+            .navbar-brand-text { display: none; }
           }
         `}</style>
       </nav>
+
       {showHelp && <HelpModal role={profile.role} onClose={() => setShowHelp(false)} />}
     </>
   )
