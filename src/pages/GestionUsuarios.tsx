@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
-import type { Profile, UserRole } from '../lib/supabaseClient'
+import type { Profile, UserRole, Student } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { GRADOS, DIVISIONES } from '../schemas/studentSchema'
 
 const ROLE_LABEL: Record<UserRole, string> = {
   estudiante: 'Estudiante',
@@ -18,8 +19,14 @@ const ROLE_BADGE: Record<UserRole, string> = {
 }
 
 interface ConfirmModal {
-  type: 'delete_user' | 'delete_all_students'
+  type: 'delete_user' | 'delete_all_students' | 'reset_student'
   target?: Profile
+}
+
+interface EditStudentModal {
+  profile: Profile
+  student: Student
+  form: { nombre: string; apellido: string; grado: string; division: string }
 }
 
 export function GestionUsuarios() {
@@ -27,12 +34,16 @@ export function GestionUsuarios() {
   const { toastSuccess, toastError } = useToast()
 
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [students, setStudents] = useState<Record<string, Student>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [deletingAll, setDeletingAll] = useState(false)
+  const [resetting, setResetting] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [confirm, setConfirm] = useState<ConfirmModal | null>(null)
+  const [editModal, setEditModal] = useState<EditStudentModal | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true)
@@ -41,7 +52,19 @@ export function GestionUsuarios() {
       .select('*')
       .order('created_at', { ascending: false })
     if (error) { toastError('Error al cargar usuarios') }
-    else { setProfiles((data ?? []) as Profile[]) }
+    else {
+      const profs = (data ?? []) as Profile[]
+      setProfiles(profs)
+      const studentIds = profs.filter((p) => p.role === 'estudiante').map((p) => p.id)
+      if (studentIds.length > 0) {
+        const { data: sData } = await supabase.from('students').select('*').in('profile_id', studentIds)
+        if (sData) {
+          const map: Record<string, Student> = {}
+          for (const s of sData as Student[]) map[s.profile_id] = s
+          setStudents(map)
+        }
+      }
+    }
     setLoading(false)
   }, [toastError])
 
@@ -66,15 +89,14 @@ export function GestionUsuarios() {
   const allowedRoles = (target: Profile): UserRole[] => {
     if (!myProfile) return []
     if (target.role === 'superadmin') return ['superadmin']
-    if (myProfile.role === 'superadmin') return ['estudiante', 'admin', 'superadmin']
-    if (myProfile.role === 'admin') return ['estudiante', 'admin']
+    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') return ['estudiante', 'admin']
     return []
   }
 
   // ── Cambiar rol ───────────────────────────────────────────────────
   const handleRoleChange = async (target: Profile, newRole: UserRole) => {
     if (!canModify(target)) { toastError('Sin permisos.'); return }
-    if (myProfile?.role === 'admin' && newRole === 'superadmin') { toastError('No podés asignar superadmin.'); return }
+    if (newRole === 'superadmin') { toastError('El rol superadmin es exclusivo.'); return }
     setSaving(target.id)
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', target.id)
     if (error) { toastError(`Error al actualizar: ${error.message}`) }
@@ -89,14 +111,51 @@ export function GestionUsuarios() {
   const handleDeleteUser = async (target: Profile) => {
     setConfirm(null)
     setDeleting(target.id)
-    // Eliminar el perfil (cascade borrará datos relacionados)
     const { error } = await supabase.from('profiles').delete().eq('id', target.id)
     if (error) { toastError(`Error al eliminar: ${error.message}`) }
     else {
       setProfiles((prev) => prev.filter((p) => p.id !== target.id))
+      setStudents((prev) => { const next = { ...prev }; delete next[target.id]; return next })
       toastSuccess(`Usuario ${target.email} eliminado`)
     }
     setDeleting(null)
+  }
+
+  // ── Reiniciar datos del alumno ─────────────────────────────────────
+  const handleResetStudent = async (target: Profile) => {
+    setConfirm(null)
+    setResetting(target.id)
+    const s = students[target.id]
+    if (s) {
+      const { error } = await supabase.from('students').delete().eq('id', s.id)
+      if (error) { toastError(`Error: ${error.message}`) }
+      else {
+        setStudents((prev) => { const next = { ...prev }; delete next[target.id]; return next })
+        toastSuccess(`Datos de ${target.email} reiniciados. El alumno podrá ingresarlos nuevamente.`)
+      }
+    }
+    setResetting(null)
+  }
+
+  // ── Editar datos del alumno ────────────────────────────────────────
+  const handleOpenEdit = (profile: Profile) => {
+    const s = students[profile.id]
+    if (!s) return
+    setEditModal({ profile, student: s, form: { nombre: s.nombre, apellido: s.apellido, grado: s.grado, division: s.division } })
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editModal) return
+    setEditSaving(true)
+    const { form: f, student: s, profile } = editModal
+    const { error } = await supabase.from('students').update({ ...f, updated_at: new Date().toISOString() }).eq('id', s.id)
+    if (error) { toastError(`Error: ${error.message}`) }
+    else {
+      setStudents((prev) => ({ ...prev, [profile.id]: { ...s, ...f } }))
+      toastSuccess(`Datos de ${profile.email} actualizados`)
+      setEditModal(null)
+    }
+    setEditSaving(false)
   }
 
   // ── Eliminar todos los estudiantes ────────────────────────────────
@@ -185,6 +244,7 @@ export function GestionUsuarios() {
                     <th>Rol</th>
                     <th>Registrado</th>
                     <th>Cambiar rol</th>
+                    <th style={{ textAlign: 'center' }}>Datos alumno</th>
                     <th style={{ textAlign: 'center' }}>Acción</th>
                   </tr>
                 </thead>
@@ -234,6 +294,38 @@ export function GestionUsuarios() {
                           )}
                         </td>
                         <td style={{ textAlign: 'center' }}>
+                            {p.role === 'estudiante' ? (
+                              <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                                {students[p.id] ? (
+                                  <>
+                                    <button
+                                      id={`btn-editar-datos-${p.id}`}
+                                      onClick={() => handleOpenEdit(p)}
+                                      disabled={isDeleting || isSaving || resetting === p.id}
+                                      className="btn btn-secondary btn-sm"
+                                      title="Editar datos del alumno"
+                                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem' }}
+                                    >✏️</button>
+                                    <button
+                                      id={`btn-reiniciar-datos-${p.id}`}
+                                      onClick={() => setConfirm({ type: 'reset_student', target: p })}
+                                      disabled={isDeleting || isSaving || resetting === p.id}
+                                      className="btn btn-danger btn-sm"
+                                      title="Reiniciar datos (el alumno vuelve a ingresarlos)"
+                                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem' }}
+                                    >
+                                      {resetting === p.id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : '🔄'}
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: '#475569' }}>Sin datos</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.8rem', color: '#334155' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
                           {modifiable ? (
                             <button
                               id={`btn-eliminar-${p.id}`}
@@ -276,47 +368,86 @@ export function GestionUsuarios() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
           onClick={(e) => { if (e.target === e.currentTarget) setConfirm(null) }}
         >
-          <div
-            className="glass-card animate-fade-in"
-            style={{ maxWidth: 420, width: '100%', padding: '2rem', border: '1px solid rgba(239,68,68,0.3)' }}
-          >
+          <div className="glass-card animate-fade-in" style={{ maxWidth: 420, width: '100%', padding: '2rem', border: '1px solid rgba(239,68,68,0.3)' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>
-              {confirm.type === 'delete_all_students' ? '⚠️' : '🗑️'}
+              {confirm.type === 'delete_all_students' ? '⚠️' : confirm.type === 'reset_student' ? '🔄' : '🗑️'}
             </div>
-
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f1f5f9', textAlign: 'center', marginBottom: '0.75rem' }}>
               {confirm.type === 'delete_all_students'
                 ? `Eliminar ${studentCount} estudiante${studentCount !== 1 ? 's' : ''}`
+                : confirm.type === 'reset_student'
+                ? 'Reiniciar datos del alumno'
                 : 'Eliminar usuario'}
             </h2>
-
             <p style={{ fontSize: '0.875rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               {confirm.type === 'delete_all_students'
-                ? <>Esto eliminará <strong style={{ color: '#f87171' }}>permanentemente</strong> a todos los usuarios con rol <strong>Estudiante</strong> y todos sus datos (QR, llegadas). Esta acción <strong>no se puede deshacer</strong>.</>
-                : <>Se eliminará permanentemente a <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong> y todos sus datos. Esta acción <strong>no se puede deshacer</strong>.</>
+                ? <>Elimina <strong style={{ color: '#f87171' }}>permanentemente</strong> todos los estudiantes y sus datos. <strong>No se puede deshacer</strong>.</>
+                : confirm.type === 'reset_student'
+                ? <>Se borrarán los datos de <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong>. El alumno podrá volver a ingresarlos al iniciar sesión.</>
+                : <>Se eliminará permanentemente a <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong> y todos sus datos. <strong>No se puede deshacer</strong>.</>
               }
             </p>
-
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
                 id="btn-confirmar-eliminacion"
                 onClick={() => {
                   if (confirm.type === 'delete_all_students') handleDeleteAllStudents()
+                  else if (confirm.type === 'reset_student' && confirm.target) handleResetStudent(confirm.target)
                   else if (confirm.target) handleDeleteUser(confirm.target)
                 }}
                 className="btn btn-danger"
                 style={{ flex: 1, fontWeight: 700 }}
               >
-                Sí, eliminar
+                {confirm.type === 'reset_student' ? '🔄 Sí, reiniciar' : 'Sí, eliminar'}
               </button>
-              <button
-                id="btn-cancelar-eliminacion"
-                onClick={() => setConfirm(null)}
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
-              >
-                Cancelar
+              <button id="btn-cancelar-eliminacion" onClick={() => setConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal editar datos del alumno ── */}
+      {editModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditModal(null) }}
+        >
+          <div className="glass-card animate-fade-in" style={{ maxWidth: 440, width: '100%', padding: '2rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#f1f5f9', marginBottom: '0.4rem' }}>✏️ Editar datos del alumno</h2>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>{editModal.profile.email}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Nombre</label>
+                  <input className="input-base" value={editModal.form.nombre} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, nombre: e.target.value } } : null)} maxLength={60} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Apellido</label>
+                  <input className="input-base" value={editModal.form.apellido} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, apellido: e.target.value } } : null)} maxLength={60} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Año</label>
+                  <select className="input-base" value={editModal.form.grado} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, grado: e.target.value } } : null)}>
+                    <option value="">Seleccioná...</option>
+                    {GRADOS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>División</label>
+                  <select className="input-base" value={editModal.form.division} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, division: e.target.value } } : null)}>
+                    <option value="">Seleccioná...</option>
+                    {DIVISIONES.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button id="btn-guardar-edicion-alumno" onClick={handleSaveEdit} disabled={editSaving} className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }}>
+                {editSaving ? <><div className="spinner" /> Guardando...</> : '💾 Guardar cambios'}
               </button>
+              <button onClick={() => setEditModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
             </div>
           </div>
         </div>
