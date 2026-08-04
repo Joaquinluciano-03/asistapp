@@ -1,14 +1,14 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { QRScanner } from '../components/QRScanner'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
 import type { Student } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { xorDecrypt } from '../utils/crypto'
+import { xorDecrypt, verifySignature } from '../utils/crypto'
 import { getFechaArgentina, getTurnoActual, turnoLabel } from '../utils/turno'
 
-type ScanState = 'scanning' | 'confirming' | 'registering' | 'done'
+type ScanState = 'scanning' | 'confirming' | 'verifying' | 'registering' | 'done'
 
 interface LastFichaje {
   nombre: string
@@ -25,6 +25,13 @@ export function AdminScanner() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [lastScannedId, setLastScannedId] = useState<string | null>(null)
   const [lastFichaje, setLastFichaje] = useState<LastFichaje | null>(null)
+
+  // CRÍTICO 8: Limpiar ID escaneado al volver a scanning
+  useEffect(() => {
+    if (scanState === 'scanning') {
+      setLastScannedId(null)
+    }
+  }, [scanState])
 
   // ── Buscador de alumnos ──────────────────────────────────────────
   const [search, setSearch] = useState('')
@@ -70,14 +77,24 @@ export function AdminScanner() {
       }
 
       let studentId: string | null = null
+      let sig: string | null = null
       try {
         const parsed = JSON.parse(decrypted)
         studentId = parsed?.sid ?? null
+        sig = parsed?.sig ?? null
       } catch {
         // JSON inválido dentro del cifrado
       }
 
       if (!studentId) { toastWarning('QR inválido'); return }
+
+      // CRÍTICO 12: Verificar firma anti-falsificación
+      const isValid = await verifySignature(studentId, sig || '')
+      if (!isValid) {
+        toastWarning('⚠️ QR falsificado o desactualizado. Volvé a generar el carnet desde el panel de estudiante.')
+        return
+      }
+
       if (studentId === lastScannedId) return
       setLastScannedId(studentId)
       setScanState('confirming')
@@ -96,7 +113,8 @@ export function AdminScanner() {
   // ── Confirm ──────────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!student || !user || !profile) return
-    setScanState('registering')
+    // CRÍTICO 11: Mostrar estado intermedio para DB Check
+    setScanState('verifying')
 
     // CRÍTICO 2: Turno calculado con zona horaria Argentina (igual al trigger de Supabase)
     const turno = getTurnoActual()
@@ -118,6 +136,7 @@ export function AdminScanner() {
       return
     }
 
+    setScanState('registering')
     const { error } = await supabase.from('llegadas_tarde').insert({
       student_id: student.id,
       metodo: 'qr',
@@ -232,7 +251,7 @@ export function AdminScanner() {
         </div>
 
         {/* Confirmación */}
-        {(scanState === 'confirming' || scanState === 'registering') && student && (
+        {(scanState === 'confirming' || scanState === 'verifying' || scanState === 'registering') && student && (
           <div className="glass-card animate-fade-in" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
             <h3 style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Confirmar registro
@@ -246,10 +265,10 @@ export function AdminScanner() {
               ))}
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button id="btn-confirmar-llegada" onClick={handleConfirm} disabled={scanState === 'registering'} className="btn btn-success" style={{ flex: 1 }}>
-                {scanState === 'registering' ? <><div className="spinner" /> Registrando...</> : '✅ Confirmar llegada tarde'}
+              <button id="btn-confirmar-llegada" onClick={handleConfirm} disabled={scanState === 'registering' || scanState === 'verifying'} className="btn btn-success" style={{ flex: 1 }}>
+                {scanState === 'verifying' ? <><div className="spinner" /> Verificando...</> : scanState === 'registering' ? <><div className="spinner" /> Registrando...</> : '✅ Confirmar llegada tarde'}
               </button>
-              <button id="btn-cancelar-scan" onClick={handleCancel} disabled={scanState === 'registering'} className="btn btn-secondary">Cancelar</button>
+              <button id="btn-cancelar-scan" onClick={handleCancel} disabled={scanState === 'registering' || scanState === 'verifying'} className="btn btn-secondary">Cancelar</button>
             </div>
           </div>
         )}

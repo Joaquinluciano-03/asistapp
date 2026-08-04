@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import QRCodeLib from 'qrcode'
-import { xorEncrypt } from '../utils/crypto'
+import { xorEncrypt, generateSignature } from '../utils/crypto'
 
 interface QRGeneratorProps {
   studentId: string
@@ -266,12 +266,22 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [dataUrl, setDataUrl] = useState('')
   const [rendering, setRendering] = useState(true)
-  // Contenido en claro → cifrado XOR con clave "IDO" → Base64
-  const qrData = xorEncrypt(JSON.stringify({ sid: studentId }))
+  const [qrData, setQrData] = useState<string | null>(null)
+
+  // CRÍTICO 12: Firmar el payload antes de cifrarlo
+  useEffect(() => {
+    let active = true
+    generateSignature(studentId).then((sig) => {
+      if (active) {
+        setQrData(xorEncrypt(JSON.stringify({ sid: studentId, sig })))
+      }
+    })
+    return () => { active = false }
+  }, [studentId])
 
   const render = useCallback(async () => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !qrData) return
     setRendering(true)
 
     canvas.width = CW

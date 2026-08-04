@@ -14,6 +14,7 @@ export function AdminManual() {
   const [students, setStudents] = useState<Student[]>([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<Student | null>(null)
+  const [verifying, setVerifying] = useState(false)
   const [registering, setRegistering] = useState(false)
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export function AdminManual() {
 
   const handleRegister = async () => {
     if (!selected || !user || !profile) return
-    setRegistering(true)
+    setVerifying(true)
 
     // CRÍTICO 2: Turno con zona horaria Argentina (igual al trigger de Supabase)
     const turno = getTurnoActual()
@@ -63,9 +64,12 @@ export function AdminManual() {
 
     if (existente && existente.length > 0) {
       toastWarning(`Ya se registró la llegada de ${selected.nombre} ${selected.apellido} en el ${turnoLabel(turno)} de hoy.`)
-      setRegistering(false)
+      setVerifying(false)
       return
     }
+
+    setVerifying(false)
+    setRegistering(true)
 
     const { error } = await supabase.from('llegadas_tarde').insert({
       student_id: selected.id,
@@ -219,11 +223,13 @@ export function AdminManual() {
               <button
                 id="btn-registrar-manual"
                 onClick={handleRegister}
-                disabled={registering}
+                disabled={registering || verifying}
                 className="btn btn-success"
                 style={{ flex: 1 }}
               >
-                {registering ? (
+                {verifying ? (
+                  <><div className="spinner" /> Verificando...</>
+                ) : registering ? (
                   <><div className="spinner" /> Registrando...</>
                 ) : (
                   '✅ Registrar llegada tarde'
@@ -231,7 +237,7 @@ export function AdminManual() {
               </button>
               <button
                 onClick={() => setSelected(null)}
-                disabled={registering}
+                disabled={registering || verifying}
                 className="btn btn-secondary"
                 id="btn-limpiar-seleccion"
               >
