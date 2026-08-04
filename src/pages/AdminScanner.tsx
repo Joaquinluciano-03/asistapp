@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabaseClient'
 import type { Student } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { xorDecrypt } from '../utils/crypto'
+import { getFechaArgentina, getTurnoActual, turnoLabel } from '../utils/turno'
 
 type ScanState = 'scanning' | 'confirming' | 'registering' | 'done'
 
@@ -55,17 +57,26 @@ export function AdminScanner() {
     setScanState('confirming')
   }, [])
 
-  // ── Scan handler ─────────────────────────────────────────────────
+  // ── Scan handler ──────────────────────────────────────────────────────
   const handleScan = useCallback(
     async (raw: string) => {
       if (scanState !== 'scanning') return
+
+      // CRTICO 3: Descifrar XOR antes de parsear — rechaza QR no emitidos por el sistema
+      const decrypted = xorDecrypt(raw.trim())
+      if (!decrypted) {
+        toastWarning('⚠️ QR no reconocido por el sistema. Solo se aceptan carnets oficiales.')
+        return
+      }
+
       let studentId: string | null = null
       try {
-        const parsed = JSON.parse(raw)
-        studentId = parsed?.sid ?? raw.trim()
+        const parsed = JSON.parse(decrypted)
+        studentId = parsed?.sid ?? null
       } catch {
-        studentId = raw.trim()
+        // JSON inválido dentro del cifrado
       }
+
       if (!studentId) { toastWarning('QR inválido'); return }
       if (studentId === lastScannedId) return
       setLastScannedId(studentId)
@@ -87,38 +98,22 @@ export function AdminScanner() {
     if (!student || !user || !profile) return
     setScanState('registering')
 
-    // Determinar turno según la hora actual
-    const ahora = new Date()
-    const hora = ahora.getHours()
-    const turno: 'mañana' | 'tarde' = hora < 14 ? 'mañana' : 'tarde'
+    // CRÍTICO 2: Turno calculado con zona horaria Argentina (igual al trigger de Supabase)
+    const turno = getTurnoActual()
+    const fecha = getFechaArgentina()
 
-    // Rango del día actual (medianoche → medianoche siguiente)
-    const inicioHoy = new Date(ahora); inicioHoy.setHours(0, 0, 0, 0)
-    const finHoy = new Date(ahora); finHoy.setHours(23, 59, 59, 999)
-
-    // Límite de turno para la consulta
-    const inicioTurno = new Date(ahora)
-    const finTurno = new Date(ahora)
-    if (turno === 'mañana') {
-      inicioTurno.setHours(0, 0, 0, 0)
-      finTurno.setHours(13, 59, 59, 999)
-    } else {
-      inicioTurno.setHours(14, 0, 0, 0)
-      finTurno.setHours(23, 59, 59, 999)
-    }
-
-    // Verificar si ya existe registro de este alumno en este turno
+    // CRÍTICO 1: Check atómico por fecha+turno (campos calculados por el servidor)
+    // Evita race condition parcial — el constraint UNIQUE en DB es el último guard
     const { data: existente } = await supabase
       .from('llegadas_tarde')
       .select('id')
       .eq('student_id', student.id)
-      .gte('created_at', inicioTurno.toISOString())
-      .lte('created_at', finTurno.toISOString())
+      .eq('fecha', fecha)
+      .eq('turno', turno)
       .limit(1)
 
     if (existente && existente.length > 0) {
-      const turnoLabel = turno === 'mañana' ? 'turno mañana' : 'turno tarde'
-      toastWarning(`Ya se registró la llegada tarde de ${student.nombre} ${student.apellido} en el ${turnoLabel} de hoy.`)
+      toastWarning(`Ya se registró la llegada de ${student.nombre} ${student.apellido} en el ${turnoLabel(turno)} de hoy.`)
       setScanState('confirming')
       return
     }
@@ -130,11 +125,17 @@ export function AdminScanner() {
       registrado_por_email: profile.email,
     })
     if (error) {
-      toastError(`Error al registrar: ${error.message}`)
-      setScanState('confirming')
+      // 23505 = violación del UNIQUE constraint (race condition resuelta por la DB)
+      if (error.code === '23505') {
+        toastWarning(`Ya se registró la llegada de ${student.nombre} ${student.apellido} en el ${turnoLabel(turno)} de hoy.`)
+        setScanState('confirming')
+      } else {
+        toastError(`Error al registrar: ${error.message}`)
+        setScanState('confirming')
+      }
       return
     }
-    const horaStr = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const horaStr = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     setLastFichaje({ nombre: student.nombre, apellido: student.apellido, hora: horaStr })
     toastSuccess(`✅ Registrado — ${student.nombre} ${student.apellido}`)
     setScanState('done')

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import QRCodeLib from 'qrcode'
+import { xorEncrypt } from '../utils/crypto'
 
 interface QRGeneratorProps {
   studentId: string
@@ -8,21 +9,6 @@ interface QRGeneratorProps {
   grado: string
   division: string
   photoUrl?: string | null
-}
-
-// ── Cifrado XOR con clave ASCII por repetición ───────────────────────
-const CIPHER_KEY = 'IDO'
-
-/** Cifra un string aplicando XOR carácter a carácter con la clave repetida, devuelve Base64. */
-function xorEncrypt(text: string, key: string): string {
-  const keyLen = key.length
-  let result = ''
-  for (let i = 0; i < text.length; i++) {
-    const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % keyLen)
-    result += String.fromCharCode(charCode)
-  }
-  // Codificamos en Base64 para que el QR sólo contenga caracteres imprimibles
-  return btoa(unescape(encodeURIComponent(result)))
 }
 
 // ── Utilidades ────────────────────────────────────────────────────────
@@ -62,6 +48,7 @@ const R = 12 * S                    // border-radius
 async function drawFront(
   ctx: CanvasRenderingContext2D,
   offsetY: number,
+  studentId: string,
   nombre: string,
   apellido: string,
   grado: string,
@@ -185,7 +172,7 @@ async function drawFront(
   // Footer con ID
   ctx.fillStyle = '#94a3b8'
   ctx.font = `${8 * S}px Inter, sans-serif`
-  ctx.fillText(`ID: ${studentIdRef.slice(0, 8).toUpperCase()}`, CW / 2, offsetY + CH - 16 * S)
+  ctx.fillText(`ID: ${studentId.slice(0, 8).toUpperCase()}`, CW / 2, offsetY + CH - 16 * S)
 }
 
 // ── Cara TRASERA (QR grande) ───────────────────────────────────────────
@@ -274,22 +261,18 @@ async function drawBack(
   ctx.fillText('ESCANEAR AL INGRESAR', CW / 2, CH - 24 * S)
 }
 
-// Ref global para pasar studentId a drawFront sin reestructurar todo
-let studentIdRef = ''
-
 // ── Componente ────────────────────────────────────────────────────────
 export function QRGenerator({ studentId, nombre, apellido, grado, division, photoUrl }: QRGeneratorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [dataUrl, setDataUrl] = useState('')
   const [rendering, setRendering] = useState(true)
   // Contenido en claro → cifrado XOR con clave "IDO" → Base64
-  const qrData = xorEncrypt(JSON.stringify({ sid: studentId }), CIPHER_KEY)
+  const qrData = xorEncrypt(JSON.stringify({ sid: studentId }))
 
   const render = useCallback(async () => {
     const canvas = canvasRef.current
     if (!canvas) return
     setRendering(true)
-    studentIdRef = studentId
 
     canvas.width = CW
     canvas.height = TOTAL_H
@@ -327,7 +310,7 @@ export function QRGenerator({ studentId, nombre, apellido, grado, division, phot
     ctx.fillText('✂  DOBLAR AQUÍ  ✂', CW / 2, CH + FOLD / 2 + 3 * S)
 
     // ── CARA FRONTAL (bottom, orientación normal) ───────────────────
-    await drawFront(ctx, CH + FOLD, nombre, apellido, grado, division, photoUrl)
+    await drawFront(ctx, CH + FOLD, studentId, nombre, apellido, grado, division, photoUrl)
 
     // Borde exterior
     ctx.strokeStyle = 'rgba(99,148,255,0.2)'

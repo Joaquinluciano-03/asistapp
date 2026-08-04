@@ -148,13 +148,26 @@ export function GestionUsuarios() {
     if (!editModal) return
     setEditSaving(true)
     const { form: f, student: s, profile } = editModal
+
+    // CRÍTICO 4: Actualizar students
     const { error } = await supabase.from('students').update({ ...f, updated_at: new Date().toISOString() }).eq('id', s.id)
-    if (error) { toastError(`Error: ${error.message}`) }
-    else {
-      setStudents((prev) => ({ ...prev, [profile.id]: { ...s, ...f } }))
-      toastSuccess(`Datos de ${profile.email} actualizados`)
-      setEditModal(null)
+    if (error) {
+      toastError(`Error: ${error.message}`)
+      setEditSaving(false)
+      return
     }
+
+    // CRÍTICO 4: Mantener consistencia — actualizar snapshots históricos en llegadas_tarde
+    await supabase.from('llegadas_tarde').update({
+      nombre: f.nombre,
+      apellido: f.apellido,
+      grado: f.grado,
+      division: f.division,
+    }).eq('student_id', s.id)
+
+    setStudents((prev) => ({ ...prev, [profile.id]: { ...s, ...f } }))
+    toastSuccess(`Datos de ${profile.email} actualizados`)
+    setEditModal(null)
     setEditSaving(false)
   }
 

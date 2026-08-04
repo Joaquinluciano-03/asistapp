@@ -91,6 +91,15 @@ export function Planillas() {
           </button>
         </div>
 
+        {/* GRAVE 7: Aviso cuando se alcanza el límite de 500 registros */}
+        {!loading && llegadas.length >= 500 && (
+          <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '0.75rem', padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.83rem' }}>
+            <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+            <span style={{ color: '#fbbf24', fontWeight: 600 }}>Se alcanzó el límite de 500 registros.</span>
+            <span style={{ color: '#94a3b8' }}>El reporte y el Excel pueden estar incompletos. Acotá el rango de fechas para ver todos los datos.</span>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
           <div

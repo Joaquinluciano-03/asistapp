@@ -37,29 +37,32 @@ export function EstudianteDashboard() {
   useEffect(() => {
     if (!user) return
     void (async () => {
-      try {
-        const { data } = await supabase
-          .from('students')
-          .select('*')
-          .eq('profile_id', user.id)
-          .single()
-        if (data) {
-          const s = data as Student
-          setStudent(s)
-          setForm({
-            nombre: s.nombre,
-            apellido: s.apellido,
-            grado: s.grado,
-            division: s.division,
-          })
-          setShowQR(true)
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('profile_id', user.id)
+        .single()
+
+      // GRAVE 6: Distinguir "sin registro" de error real
+      if (error) {
+        // PGRST116 = "0 rows returned" = primer login, mostrar manual
+        if (error.code === 'PGRST116') {
+          setShowInitialHelp(true)
         }
-      } catch (e) {
-        // Error o sin resultados
-        setShowInitialHelp(true)
-      } finally {
-        setLoadingData(false)
+        // Otros errores (red, RLS, Supabase caído): no abrir el manual
+      } else if (data) {
+        const s = data as Student
+        setStudent(s)
+        setForm({
+          nombre: s.nombre,
+          apellido: s.apellido,
+          grado: s.grado,
+          division: s.division,
+        })
+        setShowQR(true)
       }
+
+      setLoadingData(false)
     })()
   }, [user])
 

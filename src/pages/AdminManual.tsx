@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import type { Student } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { getFechaArgentina, getTurnoActual, turnoLabel } from '../utils/turno'
 
 export function AdminManual() {
   const { user, profile } = useAuth()
@@ -47,33 +48,21 @@ export function AdminManual() {
     if (!selected || !user || !profile) return
     setRegistering(true)
 
-    // Determinar turno según la hora actual
-    const ahora = new Date()
-    const hora = ahora.getHours()
-    const turno: 'mañana' | 'tarde' = hora < 14 ? 'mañana' : 'tarde'
+    // CRÍTICO 2: Turno con zona horaria Argentina (igual al trigger de Supabase)
+    const turno = getTurnoActual()
+    const fecha = getFechaArgentina()
 
-    const inicioTurno = new Date(ahora)
-    const finTurno = new Date(ahora)
-    if (turno === 'mañana') {
-      inicioTurno.setHours(0, 0, 0, 0)
-      finTurno.setHours(13, 59, 59, 999)
-    } else {
-      inicioTurno.setHours(14, 0, 0, 0)
-      finTurno.setHours(23, 59, 59, 999)
-    }
-
-    // Verificar si ya existe registro de este alumno en este turno
+    // CRÍTICO 1: Check por fecha+turno (campos del servidor), sin rangos de timestamp locales
     const { data: existente } = await supabase
       .from('llegadas_tarde')
       .select('id')
       .eq('student_id', selected.id)
-      .gte('created_at', inicioTurno.toISOString())
-      .lte('created_at', finTurno.toISOString())
+      .eq('fecha', fecha)
+      .eq('turno', turno)
       .limit(1)
 
     if (existente && existente.length > 0) {
-      const turnoLabel = turno === 'mañana' ? 'turno mañana' : 'turno tarde'
-      toastWarning(`Ya se registró la llegada tarde de ${selected.nombre} ${selected.apellido} en el ${turnoLabel} de hoy.`)
+      toastWarning(`Ya se registró la llegada de ${selected.nombre} ${selected.apellido} en el ${turnoLabel(turno)} de hoy.`)
       setRegistering(false)
       return
     }
@@ -86,7 +75,12 @@ export function AdminManual() {
     })
 
     if (error) {
-      toastError(`Error al registrar: ${error.message}`)
+      // 23505 = violación del UNIQUE constraint (guard final de la DB ante race condition)
+      if (error.code === '23505') {
+        toastWarning(`Ya se registró la llegada de ${selected.nombre} ${selected.apellido} en el ${turnoLabel(turno)} de hoy.`)
+      } else {
+        toastError(`Error al registrar: ${error.message}`)
+      }
     } else {
       toastSuccess(`✅ Llegada registrada para ${selected.nombre} ${selected.apellido}`)
       setSelected(null)
