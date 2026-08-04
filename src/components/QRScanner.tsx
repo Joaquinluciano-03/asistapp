@@ -168,19 +168,6 @@ export function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
               }}
             />
           ))}
-
-          {/* Línea de escaneo animada */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 4,
-              right: 4,
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
-              animation: 'scanLine 2s ease-in-out infinite',
-              top: '50%',
-            }}
-          />
         </div>
       )}
     </div>

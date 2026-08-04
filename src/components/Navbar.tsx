@@ -123,11 +123,11 @@ export function Navbar() {
 
             {/* ── Reloj digital (siempre visible para admin) ── */}
             {isAdmin && (
-              <div style={{ textAlign: 'center', lineHeight: 1.15, userSelect: 'none', flexShrink: 0 }}>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', color: '#f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
-                  {clock.hh}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block' }}>:</span>{clock.mm}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block' }}>:</span>{clock.ss}
+              <div style={{ textAlign: 'center', lineHeight: 1.2, userSelect: 'none', flexShrink: 0 }}>
+                <div style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '0.08em', color: '#ffffff', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 18px rgba(96,165,250,0.45)' }}>
+                  {clock.hh}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block', opacity: 0.7 }}>:</span>{clock.mm}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block', opacity: 0.7 }}>:</span>{clock.ss}
                 </div>
-                <div style={{ fontSize: '0.6rem', color: '#475569', fontWeight: 600, textTransform: 'capitalize', letterSpacing: '0.03em' }}>{clock.fecha}</div>
+                <div style={{ fontSize: '0.68rem', color: '#e2e8f0', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em', marginTop: '0.05rem' }}>{clock.fecha}</div>
               </div>
             )}
 
