@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -16,12 +16,26 @@ const ROLE_BADGE: Record<string, string> = {
   superadmin: 'badge-purple',
 }
 
+function useDigitalClock() {
+  const [time, setTime] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const hh = String(time.getHours()).padStart(2, '0')
+  const mm = String(time.getMinutes()).padStart(2, '0')
+  const ss = String(time.getSeconds()).padStart(2, '0')
+  const fecha = time.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' })
+  return { hh, mm, ss, fecha }
+}
+
 export function Navbar() {
   const { profile, signOut } = useAuth()
   const { toastSuccess } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const [showHelp, setShowHelp] = useState(false)
+  const clock = useDigitalClock()
 
   const handleSignOut = async () => {
     await signOut()
@@ -58,7 +72,7 @@ export function Navbar() {
         }}
       >
         <div className="page-container" style={{ padding: '0 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', position: 'relative' }}>
             {/* Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
@@ -85,6 +99,19 @@ export function Navbar() {
                 </div>
               </div>
             </div>
+
+            {/* ── Reloj digital centrado (solo admin) ── */}
+            {isAdmin && (
+              <div
+                className="hidden-mobile"
+                style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', lineHeight: 1.1, userSelect: 'none' }}
+              >
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '0.08em', color: '#f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
+                  {clock.hh}<span style={{ opacity: 0.5, animation: 'clockBlink 1s step-end infinite' }}>:</span>{clock.mm}<span style={{ opacity: 0.5, animation: 'clockBlink 1s step-end infinite' }}>:</span>{clock.ss}
+                </div>
+                <div style={{ fontSize: '0.62rem', color: '#475569', fontWeight: 600, textTransform: 'capitalize', letterSpacing: '0.04em', marginTop: '0.1rem' }}>{clock.fecha}</div>
+              </div>
+            )}
 
             {/* Admin nav links */}
             {isAdmin && (

@@ -136,7 +136,7 @@ export function EstudianteDashboard() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: showQR && student ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
+        <div className="student-dashboard-grid">
 
           {/* ── Panel de datos ── */}
           {student ? (

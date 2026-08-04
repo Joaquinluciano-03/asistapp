@@ -529,3 +529,21 @@ body::before {
   .page-container { padding: 1.25rem 1rem; }
   .page-title { font-size: 1.4rem; }
 }
+
+/* Student dashboard — grid responsive */
+.student-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .student-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes clockBlink {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0; }
+}
