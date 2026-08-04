@@ -86,6 +86,43 @@ export function AdminScanner() {
   const handleConfirm = async () => {
     if (!student || !user || !profile) return
     setScanState('registering')
+
+    // Determinar turno según la hora actual
+    const ahora = new Date()
+    const hora = ahora.getHours()
+    const turno: 'mañana' | 'tarde' = hora < 14 ? 'mañana' : 'tarde'
+
+    // Rango del día actual (medianoche → medianoche siguiente)
+    const inicioHoy = new Date(ahora); inicioHoy.setHours(0, 0, 0, 0)
+    const finHoy = new Date(ahora); finHoy.setHours(23, 59, 59, 999)
+
+    // Límite de turno para la consulta
+    const inicioTurno = new Date(ahora)
+    const finTurno = new Date(ahora)
+    if (turno === 'mañana') {
+      inicioTurno.setHours(0, 0, 0, 0)
+      finTurno.setHours(13, 59, 59, 999)
+    } else {
+      inicioTurno.setHours(14, 0, 0, 0)
+      finTurno.setHours(23, 59, 59, 999)
+    }
+
+    // Verificar si ya existe registro de este alumno en este turno
+    const { data: existente } = await supabase
+      .from('llegadas_tarde')
+      .select('id')
+      .eq('student_id', student.id)
+      .gte('created_at', inicioTurno.toISOString())
+      .lte('created_at', finTurno.toISOString())
+      .limit(1)
+
+    if (existente && existente.length > 0) {
+      const turnoLabel = turno === 'mañana' ? 'turno mañana' : 'turno tarde'
+      toastWarning(`Ya se registró la llegada tarde de ${student.nombre} ${student.apellido} en el ${turnoLabel} de hoy.`)
+      setScanState('confirming')
+      return
+    }
+
     const { error } = await supabase.from('llegadas_tarde').insert({
       student_id: student.id,
       metodo: 'qr',
@@ -93,16 +130,12 @@ export function AdminScanner() {
       registrado_por_email: profile.email,
     })
     if (error) {
-      if (error.code === '23505') {
-        toastWarning(`Ya se registró la llegada tarde de ${student.nombre} ${student.apellido} hoy.`)
-      } else {
-        toastError(`Error al registrar: ${error.message}`)
-      }
+      toastError(`Error al registrar: ${error.message}`)
       setScanState('confirming')
       return
     }
-    const ahora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    setLastFichaje({ nombre: student.nombre, apellido: student.apellido, hora: ahora })
+    const horaStr = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    setLastFichaje({ nombre: student.nombre, apellido: student.apellido, hora: horaStr })
     toastSuccess(`✅ Registrado — ${student.nombre} ${student.apellido}`)
     setScanState('done')
     setTimeout(() => { setScanState('scanning'); setStudent(null); setLastScannedId(null) }, 2000)

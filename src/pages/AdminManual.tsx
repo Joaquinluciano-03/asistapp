@@ -47,6 +47,37 @@ export function AdminManual() {
     if (!selected || !user || !profile) return
     setRegistering(true)
 
+    // Determinar turno según la hora actual
+    const ahora = new Date()
+    const hora = ahora.getHours()
+    const turno: 'mañana' | 'tarde' = hora < 14 ? 'mañana' : 'tarde'
+
+    const inicioTurno = new Date(ahora)
+    const finTurno = new Date(ahora)
+    if (turno === 'mañana') {
+      inicioTurno.setHours(0, 0, 0, 0)
+      finTurno.setHours(13, 59, 59, 999)
+    } else {
+      inicioTurno.setHours(14, 0, 0, 0)
+      finTurno.setHours(23, 59, 59, 999)
+    }
+
+    // Verificar si ya existe registro de este alumno en este turno
+    const { data: existente } = await supabase
+      .from('llegadas_tarde')
+      .select('id')
+      .eq('student_id', selected.id)
+      .gte('created_at', inicioTurno.toISOString())
+      .lte('created_at', finTurno.toISOString())
+      .limit(1)
+
+    if (existente && existente.length > 0) {
+      const turnoLabel = turno === 'mañana' ? 'turno mañana' : 'turno tarde'
+      toastWarning(`Ya se registró la llegada tarde de ${selected.nombre} ${selected.apellido} en el ${turnoLabel} de hoy.`)
+      setRegistering(false)
+      return
+    }
+
     const { error } = await supabase.from('llegadas_tarde').insert({
       student_id: selected.id,
       metodo: 'manual',
@@ -55,11 +86,7 @@ export function AdminManual() {
     })
 
     if (error) {
-      if (error.code === '23505') {
-        toastWarning(`Ya se registró la llegada tarde de ${selected.nombre} ${selected.apellido} hoy.`)
-      } else {
-        toastError(`Error al registrar: ${error.message}`)
-      }
+      toastError(`Error al registrar: ${error.message}`)
     } else {
       toastSuccess(`✅ Llegada registrada para ${selected.nombre} ${selected.apellido}`)
       setSelected(null)
