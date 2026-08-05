@@ -40,8 +40,8 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
           <li>Ingresá a <strong>Planillas</strong> desde el menú.</li>
           <li>Filtrá por rango de fechas, turno (mañana/tarde), año o división usando los controles.</li>
           <li>La tabla muestra cada llegada tarde con fecha, hora, turno, método (QR o manual) y quién la registró.</li>
-          <li>Usá <strong>Exportar a Excel</strong> para descargar el informe del período filtrado.</li>
-          <li>Si el filtro devuelve 500 registros o más, el sistema avisa que el informe puede estar incompleto — acotá el rango de fechas para ver todo.</li>
+          <li>La tabla muestra los primeros 500 registros; si hay más, aparece el botón <strong>"Cargar más"</strong> abajo para seguir viendo.</li>
+          <li>Usá <strong>Exportar a Excel</strong> para descargar el informe del período filtrado — el archivo siempre incluye <strong>todos</strong> los registros que matchean el filtro, aunque no los hayas cargado todos en pantalla. Ningún dato queda afuera.</li>
         </ol>
       ),
     },
@@ -60,11 +60,6 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
               <li>Para <strong>eliminar</strong> un usuario o alumno: usá el botón 🗑️. La cuenta se desconecta del sistema — si esa persona vuelve a loguearse, va a tener que cargar sus datos de nuevo (o se le puede asignar un rol). Su historial de llegadas tarde <strong>no se borra</strong>, queda intacto.</li>
             )}
           </ol>
-          {isPreceptor && (
-            <div style={{ marginTop: '0.875rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '0.5rem', padding: '0.75rem 0.875rem', fontSize: '0.8rem', color: '#93c5fd', lineHeight: 1.65 }}>
-              ℹ️ Como <strong>preceptor</strong> podés ver el listado y editar datos de alumnos, pero <strong>cambiar roles</strong> y <strong>eliminar cuentas</strong> son acciones reservadas a admin/superadmin.
-            </div>
-          )}
         </>
       ),
     },
@@ -103,9 +98,8 @@ const studentSections: Section[] = [
           Si te equivocaste en algún dato y ya confirmaste el guardado, <strong>no podés modificarlos vos mismo</strong>. Debés:
         </p>
         <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
-          <li>Dirigirte a un <strong>preceptor</strong> (puede corregir tus datos) o a un <strong>administrador</strong> (puede además reiniciar tu cuenta).</li>
-          <li>Pedile que corrija directamente tus datos (nombre, apellido, año o división) — tu QR se actualiza automáticamente y tu historial de llegadas tarde pasado también refleja los datos corregidos.</li>
-          <li>Si preferís empezar de cero, pedile a un <strong>administrador</strong> que elimine tu cuenta: vas a poder volver a loguearte y cargar tus datos de nuevo. Tu historial de llegadas tarde anterior no se pierde.</li>
+          <li>Dirigirte a un <strong>preceptor</strong>.</li>
+          <li>Pedile que corrija tus datos (nombre, apellido, año o división).</li>
         </ol>
       </>
     ),

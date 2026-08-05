@@ -73,7 +73,7 @@ export function AdminDashboard() {
           <h1 className="page-title">
             👋 Bienvenido,{' '}
             <span className="gradient-text">
-              {profile?.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+              {profile?.role === 'superadmin' ? 'Superadmin' : profile?.role === 'preceptor' ? 'Preceptor' : 'Admin'}
             </span>
           </h1>
           <p className="page-subtitle">{profile?.email} — Seleccioná una función para comenzar.</p>

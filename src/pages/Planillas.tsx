@@ -87,13 +87,20 @@ export function Planillas() {
   const fetchAllForExport = useCallback(async (): Promise<LlegadaTarde[]> => {
     let offset = 0
     let all: LlegadaTarde[] = []
-    for (;;) {
-      const { data, error } = await buildQuery().range(offset, offset + EXPORT_BATCH_SIZE - 1)
+    let total = Infinity
+    // Avanza por la cantidad REAL de filas recibidas (no por el tamaño de
+    // lote pedido) y corta recién cuando junta el total exacto que reportó
+    // la propia query — así no se pierde nada aunque el servidor devuelva
+    // lotes más chicos de lo pedido (ej. si el proyecto de Supabase tiene
+    // un "Max Rows" distinto a EXPORT_BATCH_SIZE).
+    while (all.length < total) {
+      const { data, error, count } = await buildQuery().range(offset, offset + EXPORT_BATCH_SIZE - 1)
       if (error) throw error
       const rows = (data ?? []) as LlegadaTarde[]
+      if (count != null) total = count
+      if (rows.length === 0) break
       all = all.concat(rows)
-      if (rows.length < EXPORT_BATCH_SIZE) break
-      offset += EXPORT_BATCH_SIZE
+      offset += rows.length
     }
     return all
   }, [buildQuery])
