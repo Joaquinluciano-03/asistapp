@@ -34,7 +34,7 @@ export function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        background: 'radial-gradient(ellipse at top, #1e3a8a 0%, #0f172a 50%, #020617 100%)',
+        background: 'radial-gradient(ellipse at top, #0f4a44 0%, #0f172a 50%, #020617 100%)',
       }}
     >
       {/* Background glow */}
@@ -46,7 +46,7 @@ export function Login() {
           transform: 'translateX(-50%)',
           width: '640px',
           height: '320px',
-          background: 'radial-gradient(ellipse, rgba(37,99,235,0.18) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(13,148,136,0.22) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
@@ -62,13 +62,13 @@ export function Login() {
               width: 72,
               height: 72,
               borderRadius: 'var(--r-lg)',
-              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #0d9488 0%, #b45309 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '2rem',
               margin: '0 auto 1.25rem',
-              boxShadow: '0 0 44px rgba(37,99,235,0.35), var(--shadow-md)',
+              boxShadow: '0 0 44px rgba(13,148,136,0.4), var(--shadow-md)',
             }}
           >
             🏫
@@ -81,7 +81,7 @@ export function Login() {
               letterSpacing: '-0.045em',
               marginBottom: '0.3rem',
               color: '#f1f5f9',
-              background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
+              background: 'linear-gradient(100deg, #2dd4bf 0%, #2dd4bf 38%, #fbbf24 68%, #fbbf24 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -119,18 +119,18 @@ export function Login() {
         ) : (
           <div
             style={{
-              background: 'rgba(37,99,235,0.1)',
-              border: '1px solid rgba(59,130,246,0.2)',
+              background: 'rgba(13,148,136,0.12)',
+              border: '1px solid rgba(45,212,191,0.25)',
               borderRadius: 'var(--r-md)',
               padding: '0.875rem 1rem',
               marginBottom: '1.5rem',
               fontSize: '0.8rem',
-              color: '#93c5fd',
+              color: '#5eead4',
               lineHeight: 1.6,
             }}
           >
             ℹ️ <strong>Solo para personal y alumnos</strong> del colegio.<br />
-            Se requiere cuenta <code style={{ background: 'rgba(59,130,246,0.15)', padding: '0 4px', borderRadius: 4 }}>@donorionevictoria.com.ar</code>
+            Se requiere cuenta <code style={{ background: 'rgba(45,212,191,0.18)', padding: '0 4px', borderRadius: 4 }}>@donorionevictoria.com.ar</code>
           </div>
         )}
 
@@ -152,7 +152,7 @@ export function Login() {
         >
           {signingIn ? (
             <>
-              <div className="spinner" style={{ borderTopColor: '#1d4ed8' }} />
+              <div className="spinner" style={{ borderTopColor: '#0f766e' }} />
               Redirigiendo...
             </>
           ) : (

@@ -115,8 +115,8 @@ export function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
           margin: '0 auto',
           borderRadius: 'var(--r-lg)',
           overflow: 'hidden',
-          border: '2px solid rgba(59,130,246,0.4)',
-          boxShadow: '0 0 44px rgba(59,130,246,0.16), var(--shadow-md)',
+          border: '2px solid rgba(20,184,166,0.45)',
+          boxShadow: '0 0 44px rgba(13,148,136,0.2), var(--shadow-md)',
           background: '#0b1324',
           minHeight: '300px',
         }}
@@ -142,10 +142,10 @@ export function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
                 position: 'absolute',
                 width: '30px',
                 height: '30px',
-                borderColor: '#60a5fa',
+                borderColor: '#2dd4bf',
                 borderStyle: 'solid',
                 borderWidth: 0,
-                filter: 'drop-shadow(0 0 6px rgba(96,165,250,0.55))',
+                filter: 'drop-shadow(0 0 6px rgba(45,212,191,0.6))',
                 ...(pos === 'topleft' && {
                   top: -2, left: -2,
                   borderTopWidth: 3, borderLeftWidth: 3,

@@ -176,16 +176,16 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
           {sections.map((sec, idx) => (
             <div
               key={idx}
-              style={{ border: `1px solid ${openIdx === idx ? 'rgba(59,130,246,0.3)' : 'rgba(148,163,184,0.08)'}`, borderRadius: '0.75rem', overflow: 'hidden', transition: 'border-color 0.2s' }}
+              style={{ border: `1px solid ${openIdx === idx ? 'rgba(45,212,191,0.35)' : 'rgba(148,163,184,0.08)'}`, borderRadius: '0.75rem', overflow: 'hidden', transition: 'border-color 0.2s' }}
             >
               {/* Accordion header */}
               <button
                 onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', background: openIdx === idx ? 'rgba(59,130,246,0.07)' : 'rgba(15,23,42,0.6)', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', background: openIdx === idx ? 'rgba(13,148,136,0.1)' : 'rgba(15,23,42,0.6)', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                   <span style={{ fontSize: '1rem' }}>{sec.icon}</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: openIdx === idx ? '#93c5fd' : '#f1f5f9' }}>{sec.title}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: openIdx === idx ? '#5eead4' : '#f1f5f9' }}>{sec.title}</span>
                 </div>
                 <span style={{ fontSize: '0.75rem', color: '#64748b', transform: openIdx === idx ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
               </button>

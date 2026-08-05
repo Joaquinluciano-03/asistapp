@@ -236,7 +236,7 @@ export function AdminScanner() {
                   onClick={() => handleSelectFromSearch(s)}
                   disabled={scanState === 'confirming' || scanState === 'registering'}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'rgba(6,15,35,0.55)', border: '1px solid rgba(148,163,184,0.08)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: '#cbd5e1', fontSize: '0.875rem', transition: 'background 0.15s, border-color 0.15s', textAlign: 'left' }}
-                  onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(37,99,235,0.15)'; b.style.borderColor = 'rgba(59,130,246,0.3)' }}
+                  onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(13,148,136,0.16)'; b.style.borderColor = 'rgba(45,212,191,0.35)' }}
                   onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(6,15,35,0.55)'; b.style.borderColor = 'rgba(148,163,184,0.08)' }}
                 >
                   <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{s.apellido}, {s.nombre}</span>

@@ -149,7 +149,7 @@ export function EstudianteDashboard() {
                 <span style={{ fontSize: '1.2rem' }}>🔒</span>
                 <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Mis datos</h2>
               </div>
-              <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '0.625rem', padding: '0.8rem 1rem', marginBottom: '1.1rem', fontSize: '0.8rem', color: '#93c5fd', lineHeight: 1.6 }}>
+              <div style={{ background: 'rgba(13,148,136,0.1)', border: '1px solid rgba(45,212,191,0.28)', borderRadius: '0.625rem', padding: '0.8rem 1rem', marginBottom: '1.1rem', fontSize: '0.8rem', color: '#5eead4', lineHeight: 1.6 }}>
                 🔒 Tus datos están <strong>bloqueados</strong>. Si necesitás modificarlos, solicitáselo a un administrador.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

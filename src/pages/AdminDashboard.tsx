@@ -58,8 +58,8 @@ export function AdminDashboard() {
   }, [])
 
   const cards = [
-    { to: '/admin/escanear', icon: '📷', title: 'Escanear QR', desc: 'Leé el QR del alumno para registrar su llegada tarde.', color: '#2563eb', id: 'card-escanear' },
-    { to: '/admin/planillas', icon: '📊', title: 'Planillas', desc: 'Historial de llegadas tarde, filtros y exportación a Excel.', color: '#0891b2', id: 'card-planillas' },
+    { to: '/admin/escanear', icon: '📷', title: 'Escanear QR', desc: 'Leé el QR del alumno para registrar su llegada tarde.', color: '#0d9488', id: 'card-escanear' },
+    { to: '/admin/planillas', icon: '📊', title: 'Planillas', desc: 'Historial de llegadas tarde, filtros y exportación a Excel.', color: '#d97706', id: 'card-planillas' },
     { to: '/admin/usuarios', icon: '👥', title: 'Usuarios', desc: 'Administrá roles: estudiante, admin y superadmin.', color: '#059669', id: 'card-usuarios' },
   ]
 
@@ -122,9 +122,9 @@ export function AdminDashboard() {
             {/* Tarjetas por período — hoy / semana / mes, cada una con su rango y su split por turno */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               {[
-                { key: 'hoy', icon: '📅', label: 'Hoy', subtitle: formatHoy(metricas.hoy.fecha), data: metricas.hoy, color: '#f59e0b' },
-                { key: 'semana', icon: '🗓️', label: 'Esta semana', subtitle: formatRango(metricas.semana.desde, metricas.semana.hasta), data: metricas.semana, color: '#3b82f6' },
-                { key: 'mes', icon: '📆', label: 'Este mes', subtitle: formatMes(metricas.mes.desde), data: metricas.mes, color: '#8b5cf6' },
+                { key: 'hoy', icon: '📅', periodo: 'Hoy', subtitle: formatHoy(metricas.hoy.fecha), data: metricas.hoy, color: '#f59e0b' },
+                { key: 'semana', icon: '🗓️', periodo: 'Esta semana', subtitle: formatRango(metricas.semana.desde, metricas.semana.hasta), data: metricas.semana, color: '#14b8a6' },
+                { key: 'mes', icon: '📆', periodo: 'Este mes', subtitle: formatMes(metricas.mes.desde), data: metricas.mes, color: '#e11d48' },
               ].map((p) => (
                 <div key={p.key} className="stat-card" style={{ borderTop: `3px solid ${p.color}40` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -132,10 +132,16 @@ export function AdminDashboard() {
                     <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textAlign: 'right' }}>{p.subtitle}</span>
                   </div>
                   <div className="stat-value" style={{ color: p.color, fontSize: '1.75rem' }}>{p.data.total}</div>
-                  <div className="stat-label">{p.label}</div>
-                  <div style={{ display: 'flex', gap: '0.875rem', marginTop: '0.6rem', fontSize: '0.75rem', fontWeight: 600 }}>
-                    <span style={{ color: '#4ade80' }}>🌅 {p.data.manana}</span>
-                    <span style={{ color: '#a78bfa' }}>🌆 {p.data.tarde}</span>
+                  <div className="stat-label">Llegadas tarde — {p.periodo.toLowerCase()}</div>
+                  <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(148,163,184,0.08)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>🌅 Turno mañana</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#4ade80', marginTop: '0.2rem' }}>{p.data.manana}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>🌆 Turno tarde</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fb7185', marginTop: '0.2rem' }}>{p.data.tarde}</div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -153,11 +159,11 @@ export function AdminDashboard() {
                     <div
                       style={{
                         width: '100%',
-                        background: d.count > 0 ? 'linear-gradient(180deg, #3b82f6, #1d4ed8)' : 'rgba(51,65,85,0.5)',
+                        background: d.count > 0 ? 'linear-gradient(180deg, #2dd4bf, #0f766e)' : 'rgba(51,65,85,0.5)',
                         borderRadius: '4px 4px 0 0',
                         height: `${Math.max((d.count / maxDia) * 80, d.count > 0 ? 8 : 4)}px`,
                         transition: 'height 0.3s ease',
-                        boxShadow: d.count > 0 ? '0 0 8px rgba(59,130,246,0.3)' : 'none',
+                        boxShadow: d.count > 0 ? '0 0 8px rgba(13,148,136,0.35)' : 'none',
                       }}
                     />
                     <span style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', lineHeight: 1.2 }}>{d.dia}</span>

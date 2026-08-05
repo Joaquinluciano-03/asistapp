@@ -113,8 +113,8 @@ export function Navbar() {
                         fontWeight: 500,
                         textDecoration: 'none',
                         transition: 'background 0.15s, color 0.15s',
-                        color: active ? '#60a5fa' : '#94a3b8',
-                        background: active ? 'rgba(59,130,246,0.1)' : 'transparent',
+                        color: active ? '#2dd4bf' : '#94a3b8',
+                        background: active ? 'rgba(20,184,166,0.14)' : 'transparent',
                         whiteSpace: 'nowrap',
                       }}
                       onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(148,163,184,0.08)' }}
@@ -133,7 +133,7 @@ export function Navbar() {
             {/* ── Reloj digital (siempre visible para admin) ── */}
             {isAdmin && (
               <div style={{ textAlign: 'center', lineHeight: 1.2, userSelect: 'none', flexShrink: 0 }}>
-                <div style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '0.08em', color: '#ffffff', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 18px rgba(96,165,250,0.45)' }}>
+                <div style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '0.08em', color: '#ffffff', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 18px rgba(45,212,191,0.5)' }}>
                   {clock.hh}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block', opacity: 0.7 }}>:</span>{clock.mm}<span style={{ animation: 'clockBlink 1s step-end infinite', display: 'inline-block', opacity: 0.7 }}>:</span>{clock.ss}
                 </div>
                 <div style={{ fontSize: '0.68rem', color: '#e2e8f0', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em', marginTop: '0.05rem' }}>{clock.fecha}</div>
@@ -164,9 +164,9 @@ export function Navbar() {
                 style={{ background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 'var(--r-sm)', width: 38, height: 38, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer', flexShrink: 0 }}
                 aria-label="Menú"
               >
-                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#60a5fa' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none' }} />
+                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#2dd4bf' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none' }} />
                 <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? 'transparent' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s' }} />
-                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#60a5fa' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }} />
+                <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#2dd4bf' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }} />
               </button>
 
               {/* Dropdown menu */}
@@ -199,8 +199,8 @@ export function Navbar() {
                             fontSize: '0.85rem',
                             fontWeight: 500,
                             textDecoration: 'none',
-                            color: isActive(link.to, link.exact) ? '#60a5fa' : '#cbd5e1',
-                            background: isActive(link.to, link.exact) ? 'rgba(59,130,246,0.12)' : 'transparent',
+                            color: isActive(link.to, link.exact) ? '#2dd4bf' : '#cbd5e1',
+                            background: isActive(link.to, link.exact) ? 'rgba(20,184,166,0.14)' : 'transparent',
                             transition: 'background 0.15s',
                           }}
                         >
