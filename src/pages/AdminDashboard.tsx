@@ -191,7 +191,7 @@ export function AdminDashboard() {
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
                   {topGrados.map(([curso, count], i) => (
-                    <div key={curso} style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '0.75rem', padding: '0.875rem 1rem', border: '1px solid rgba(148,163,184,0.08)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div key={curso} className="panel" style={{ padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ width: 28, height: 28, borderRadius: '8px', background: i === 0 ? 'rgba(251,191,36,0.2)' : 'rgba(51,65,85,0.6)', border: `1px solid ${i === 0 ? 'rgba(251,191,36,0.4)' : 'rgba(71,85,105,0.4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: i === 0 ? '#fbbf24' : '#94a3b8', flexShrink: 0 }}>
                         {i + 1}
                       </div>

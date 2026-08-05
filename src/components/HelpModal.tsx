@@ -152,12 +152,12 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500, padding: '1rem' }}
+      className="modal-overlay"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="animate-fade-in"
-        style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '1rem', width: '100%', maxWidth: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}
+        className="modal-card animate-fade-in"
+        style={{ maxWidth: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

@@ -80,7 +80,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav style={{ background: 'rgba(15,23,42,0.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(148,163,184,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
+      <nav style={{ background: 'rgba(8,13,28,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)', borderBottom: '1px solid rgba(148,163,184,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.25rem' }}>
 
           {/* ── Fila principal ── */}
@@ -88,7 +88,7 @@ export function Navbar() {
 
             {/* Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '9px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 'var(--r-sm)', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img src="/favicon.ico" alt="Logo Don Orione" style={{ width: 34, height: 34, objectFit: 'contain' }} />
               </div>
               <div className="navbar-brand-text">
@@ -100,25 +100,30 @@ export function Navbar() {
             {/* Links de navegación (solo desktop, solo admin) */}
             {isAdmin && (
               <div className="navbar-links-desktop">
-                {adminLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    style={{
-                      padding: '0.35rem 0.7rem',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                      textDecoration: 'none',
-                      transition: 'all 0.15s',
-                      color: isActive(link.to, link.exact) ? '#60a5fa' : '#94a3b8',
-                      background: isActive(link.to, link.exact) ? 'rgba(59,130,246,0.1)' : 'transparent',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {link.label.replace(/^[^\s]+\s/, '')}
-                  </Link>
-                ))}
+                {adminLinks.map((link) => {
+                  const active = isActive(link.to, link.exact)
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      style={{
+                        padding: '0.35rem 0.7rem',
+                        borderRadius: 'var(--r-sm)',
+                        fontSize: '0.8rem',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s, color 0.15s',
+                        color: active ? '#60a5fa' : '#94a3b8',
+                        background: active ? 'rgba(59,130,246,0.1)' : 'transparent',
+                        whiteSpace: 'nowrap',
+                      }}
+                      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(148,163,184,0.08)' }}
+                      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
+                    >
+                      {link.label.replace(/^[^\s]+\s/, '')}
+                    </Link>
+                  )
+                })}
               </div>
             )}
 
@@ -156,7 +161,7 @@ export function Navbar() {
             <div ref={menuRef} className="navbar-hamburger-wrap">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                style={{ background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '0.5rem', width: 38, height: 38, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer', flexShrink: 0 }}
+                style={{ background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 'var(--r-sm)', width: 38, height: 38, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer', flexShrink: 0 }}
                 aria-label="Menú"
               >
                 <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? '#60a5fa' : '#94a3b8', borderRadius: 2, transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none' }} />
@@ -168,7 +173,7 @@ export function Navbar() {
               {menuOpen && (
                 <div
                   className="animate-fade-in"
-                  style={{ position: 'absolute', top: '56px', right: '1rem', width: 230, background: 'rgba(10,16,35,0.98)', border: '1px solid rgba(99,148,255,0.15)', borderRadius: '0.875rem', boxShadow: '0 16px 48px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', zIndex: 200, overflow: 'hidden' }}
+                  style={{ position: 'absolute', top: '56px', right: '1rem', width: 230, background: 'rgba(10,16,35,0.98)', border: '1px solid rgba(99,148,255,0.16)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-lg)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)', zIndex: 200, overflow: 'hidden' }}
                 >
                   {/* Info usuario */}
                   <div style={{ padding: '0.875rem 1rem', borderBottom: '1px solid rgba(99,148,255,0.1)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

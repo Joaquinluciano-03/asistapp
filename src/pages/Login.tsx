@@ -41,12 +41,12 @@ export function Login() {
       <div
         style={{
           position: 'fixed',
-          top: '20%',
+          top: '18%',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '600px',
-          height: '300px',
-          background: 'radial-gradient(ellipse, rgba(37,99,235,0.15) 0%, transparent 70%)',
+          width: '640px',
+          height: '320px',
+          background: 'radial-gradient(ellipse, rgba(37,99,235,0.18) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
@@ -61,14 +61,14 @@ export function Login() {
             style={{
               width: 72,
               height: 72,
-              borderRadius: '20px',
+              borderRadius: 'var(--r-lg)',
               background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '2rem',
               margin: '0 auto 1.25rem',
-              boxShadow: '0 0 40px rgba(37,99,235,0.3)',
+              boxShadow: '0 0 44px rgba(37,99,235,0.35), var(--shadow-md)',
             }}
           >
             🏫
@@ -76,10 +76,10 @@ export function Login() {
 
           <h1
             style={{
-              fontSize: '2rem',
+              fontSize: '2.1rem',
               fontWeight: 900,
-              letterSpacing: '-0.04em',
-              marginBottom: '0.25rem',
+              letterSpacing: '-0.045em',
+              marginBottom: '0.3rem',
               color: '#f1f5f9',
               background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
               WebkitBackgroundClip: 'text',
@@ -92,7 +92,7 @@ export function Login() {
           <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
             Escuela Don Orione Victoria
           </p>
-          <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+          <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.3rem' }}>
             Sistema de registro de llegadas tarde
           </p>
         </div>
@@ -105,7 +105,7 @@ export function Login() {
             style={{
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: '0.75rem',
+              borderRadius: 'var(--r-md)',
               padding: '0.875rem 1rem',
               marginBottom: '1.5rem',
               fontSize: '0.8rem',
@@ -121,7 +121,7 @@ export function Login() {
             style={{
               background: 'rgba(37,99,235,0.1)',
               border: '1px solid rgba(59,130,246,0.2)',
-              borderRadius: '0.75rem',
+              borderRadius: 'var(--r-md)',
               padding: '0.875rem 1rem',
               marginBottom: '1.5rem',
               fontSize: '0.8rem',
@@ -139,7 +139,7 @@ export function Login() {
           id="btn-google-signin"
           onClick={handleLogin}
           disabled={signingIn || loading || !SUPABASE_CONFIGURED}
-          className="btn btn-lg"
+          className="btn btn-lg btn-google"
           style={{
             width: '100%',
             background: 'white',

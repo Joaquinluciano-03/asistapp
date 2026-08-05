@@ -154,13 +154,13 @@ export function EstudianteDashboard() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 {[{ label: 'Nombre', value: student.nombre }, { label: 'Apellido', value: student.apellido }, { label: 'Año', value: student.grado }, { label: 'División', value: student.division }].map((item) => (
-                  <div key={item.label} style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.08)', borderRadius: '0.5rem', padding: '0.875rem' }}>
+                  <div key={item.label} className="panel" style={{ padding: '0.875rem' }}>
                     <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{item.label}</div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9' }}>{item.value}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: '0.75rem', background: 'rgba(15,23,42,0.5)', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>📧 {profile?.email}</div>
+              <div className="panel" style={{ marginTop: '0.75rem', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>📧 {profile?.email}</div>
             </div>
           ) : (
             // FORM — primer ingreso
@@ -201,7 +201,7 @@ export function EstudianteDashboard() {
                     {errors.division && <span className="form-error">{errors.division}</span>}
                   </div>
                 </div>
-                <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>📧 {profile?.email}</div>
+                <div className="panel" style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>📧 {profile?.email}</div>
                 <button type="submit" id="btn-guardar-datos" className="btn btn-primary" disabled={saving} style={{ marginTop: '0.25rem' }}>
                   {saving ? <><div className="spinner" /> Guardando...</> : '✅ Guardar y generar QR'}
                 </button>
@@ -221,14 +221,14 @@ export function EstudianteDashboard() {
 
       {/* ── Modal de confirmación primer guardado ── */}
       {showConfirmModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-card animate-fade-in" style={{ maxWidth: 440, width: '100%', padding: '2rem', border: '1px solid rgba(234,179,8,0.35)' }}>
+        <div className="modal-overlay">
+          <div className="modal-card animate-fade-in" style={{ maxWidth: 440, padding: '2rem', borderColor: 'rgba(234,179,8,0.4)' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>⚠️</div>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f1f5f9', textAlign: 'center', marginBottom: '0.75rem' }}>¿Confirmás tus datos?</h2>
             <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.65, marginBottom: '1.25rem' }}>
               Una vez guardados, <strong style={{ color: '#fde047' }}>no podrás modificarlos</strong> sin la intervención de un administrador. Revisá que sean correctos.
             </p>
-            <div style={{ background: 'rgba(15,23,42,0.6)', borderRadius: '0.625rem', padding: '1rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div className="panel" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               {[{ label: 'Nombre', value: form.nombre }, { label: 'Apellido', value: form.apellido }, { label: 'Año', value: form.grado }, { label: 'División', value: form.division }].map((item) => (
                 <div key={item.label}>
                   <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>

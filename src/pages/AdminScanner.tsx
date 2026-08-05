@@ -235,9 +235,9 @@ export function AdminScanner() {
                   key={s.id}
                   onClick={() => handleSelectFromSearch(s)}
                   disabled={scanState === 'confirming' || scanState === 'registering'}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.08)', borderRadius: '0.5rem', cursor: 'pointer', color: '#cbd5e1', fontSize: '0.875rem', transition: 'all 0.15s', textAlign: 'left' }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'rgba(6,15,35,0.55)', border: '1px solid rgba(148,163,184,0.08)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: '#cbd5e1', fontSize: '0.875rem', transition: 'background 0.15s, border-color 0.15s', textAlign: 'left' }}
                   onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(37,99,235,0.15)'; b.style.borderColor = 'rgba(59,130,246,0.3)' }}
-                  onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(15,23,42,0.5)'; b.style.borderColor = 'rgba(148,163,184,0.08)' }}
+                  onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(6,15,35,0.55)'; b.style.borderColor = 'rgba(148,163,184,0.08)' }}
                 >
                   <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{s.apellido}, {s.nombre}</span>
                   <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{s.grado} — Div. {s.division}</span>
@@ -256,7 +256,7 @@ export function AdminScanner() {
             <h3 style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Confirmar registro
             </h3>
-            <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="panel" style={{ padding: '1.25rem', marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               {[{ label: 'Nombre', value: student.nombre }, { label: 'Apellido', value: student.apellido }, { label: 'Grado', value: student.grado }, { label: 'División', value: student.division }].map((item) => (
                 <div key={item.label}>
                   <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>

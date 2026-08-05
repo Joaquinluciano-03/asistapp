@@ -374,10 +374,10 @@ export function GestionUsuarios() {
       {/* ── Modal de confirmación ─────────────────────────────────── */}
       {confirm && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
+          className="modal-overlay"
           onClick={(e) => { if (e.target === e.currentTarget) setConfirm(null) }}
         >
-          <div className="glass-card animate-fade-in" style={{ maxWidth: 420, width: '100%', padding: '2rem', border: '1px solid rgba(239,68,68,0.3)' }}>
+          <div className="modal-card animate-fade-in" style={{ maxWidth: 420, padding: '2rem', borderColor: 'rgba(239,68,68,0.35)' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>
               {confirm.type === 'delete_all_students' ? '⚠️' : '🗑️'}
             </div>
@@ -413,10 +413,10 @@ export function GestionUsuarios() {
       {/* ── Modal editar datos del alumno ── */}
       {editModal && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
+          className="modal-overlay"
           onClick={(e) => { if (e.target === e.currentTarget) setEditModal(null) }}
         >
-          <div className="glass-card animate-fade-in" style={{ maxWidth: 440, width: '100%', padding: '2rem' }}>
+          <div className="modal-card animate-fade-in" style={{ maxWidth: 440, padding: '2rem' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#f1f5f9', marginBottom: '0.4rem' }}>✏️ Editar datos del alumno</h2>
             <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>{editModal.profile.email}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>

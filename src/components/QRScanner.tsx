@@ -113,11 +113,11 @@ export function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
           width: '100%',
           maxWidth: '420px',
           margin: '0 auto',
-          borderRadius: '1rem',
+          borderRadius: 'var(--r-lg)',
           overflow: 'hidden',
           border: '2px solid rgba(59,130,246,0.4)',
-          boxShadow: '0 0 40px rgba(59,130,246,0.15)',
-          background: '#0f172a',
+          boxShadow: '0 0 44px rgba(59,130,246,0.16), var(--shadow-md)',
+          background: '#0b1324',
           minHeight: '300px',
         }}
       />
@@ -140,30 +140,31 @@ export function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
               key={pos}
               style={{
                 position: 'absolute',
-                width: '28px',
-                height: '28px',
-                borderColor: '#3b82f6',
+                width: '30px',
+                height: '30px',
+                borderColor: '#60a5fa',
                 borderStyle: 'solid',
                 borderWidth: 0,
+                filter: 'drop-shadow(0 0 6px rgba(96,165,250,0.55))',
                 ...(pos === 'topleft' && {
                   top: -2, left: -2,
                   borderTopWidth: 3, borderLeftWidth: 3,
-                  borderTopLeftRadius: '0.5rem',
+                  borderTopLeftRadius: 'var(--r-sm)',
                 }),
                 ...(pos === 'topright' && {
                   top: -2, right: -2,
                   borderTopWidth: 3, borderRightWidth: 3,
-                  borderTopRightRadius: '0.5rem',
+                  borderTopRightRadius: 'var(--r-sm)',
                 }),
                 ...(pos === 'bottomleft' && {
                   bottom: -2, left: -2,
                   borderBottomWidth: 3, borderLeftWidth: 3,
-                  borderBottomLeftRadius: '0.5rem',
+                  borderBottomLeftRadius: 'var(--r-sm)',
                 }),
                 ...(pos === 'bottomright' && {
                   bottom: -2, right: -2,
                   borderBottomWidth: 3, borderRightWidth: 3,
-                  borderBottomRightRadius: '0.5rem',
+                  borderBottomRightRadius: 'var(--r-sm)',
                 }),
               }}
             />
