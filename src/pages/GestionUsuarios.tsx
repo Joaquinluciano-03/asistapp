@@ -21,7 +21,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
 }
 
 interface ConfirmModal {
-  type: 'delete_user' | 'delete_all_students' | 'reset_student'
+  type: 'delete_user' | 'delete_all_students'
   target?: Profile
 }
 
@@ -41,7 +41,6 @@ export function GestionUsuarios() {
   const [saving, setSaving] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [deletingAll, setDeletingAll] = useState(false)
-  const [resetting, setResetting] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [confirm, setConfirm] = useState<ConfirmModal | null>(null)
   const [editModal, setEditModal] = useState<EditStudentModal | null>(null)
@@ -363,20 +362,16 @@ export function GestionUsuarios() {
         >
           <div className="glass-card animate-fade-in" style={{ maxWidth: 420, width: '100%', padding: '2rem', border: '1px solid rgba(239,68,68,0.3)' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>
-              {confirm.type === 'delete_all_students' ? '⚠️' : confirm.type === 'reset_student' ? '🔄' : '🗑️'}
+              {confirm.type === 'delete_all_students' ? '⚠️' : '🗑️'}
             </div>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f1f5f9', textAlign: 'center', marginBottom: '0.75rem' }}>
               {confirm.type === 'delete_all_students'
                 ? `Eliminar ${studentCount} estudiante${studentCount !== 1 ? 's' : ''}`
-                : confirm.type === 'reset_student'
-                ? 'Reiniciar datos del alumno'
                 : 'Eliminar usuario'}
             </h2>
             <p style={{ fontSize: '0.875rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               {confirm.type === 'delete_all_students'
                 ? <>Elimina <strong style={{ color: '#f87171' }}>permanentemente</strong> todos los estudiantes y sus datos. <strong>No se puede deshacer</strong>.</>
-                : confirm.type === 'reset_student'
-                ? <>Se borrarán los datos de <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong>. El alumno podrá volver a ingresarlos al iniciar sesión.</>
                 : <>Se eliminará permanentemente a <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong> y todos sus datos. <strong>No se puede deshacer</strong>.</>
               }
             </p>
@@ -385,13 +380,12 @@ export function GestionUsuarios() {
                 id="btn-confirmar-eliminacion"
                 onClick={() => {
                   if (confirm.type === 'delete_all_students') handleDeleteAllStudents()
-                  else if (confirm.type === 'reset_student' && confirm.target) handleResetStudent(confirm.target)
                   else if (confirm.target) handleDeleteUser(confirm.target)
                 }}
                 className="btn btn-danger"
                 style={{ flex: 1, fontWeight: 700 }}
               >
-                {confirm.type === 'reset_student' ? '🔄 Sí, reiniciar' : 'Sí, eliminar'}
+                Sí, eliminar
               </button>
               <button id="btn-cancelar-eliminacion" onClick={() => setConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
             </div>
