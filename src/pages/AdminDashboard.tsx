@@ -4,49 +4,53 @@ import { useAuth } from '../context/AuthContext'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
 
-interface Metricas {
+interface PeriodMetrics {
   total: number
-  hoy: number
   manana: number
   tarde: number
-  porGrado: Record<string, number>
-  porDia: { dia: string; count: number }[]
 }
 
 interface DashboardMetricsRPC {
-  total: number
-  hoy: number
-  manana: number
-  tarde: number
+  hoy: PeriodMetrics & { fecha: string }
+  semana: PeriodMetrics & { desde: string; hasta: string }
+  mes: PeriodMetrics & { desde: string; hasta: string }
   porGrado: Record<string, number>
   porDia: { fecha: string; count: number }[]
 }
 
 const DIAS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const parseFecha = (fecha: string) => new Date(fecha + 'T00:00:00')
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-// dashboard_metrics_30d() calcula todo con count()/group by dentro de
-// Postgres — evita traer al cliente las filas crudas de los últimos 30
-// días, que a este volumen (cientos por día) superan el límite de 1000
-// filas por request de Supabase/PostgREST.
-function toMetricas(raw: DashboardMetricsRPC): Metricas {
-  const porDia = raw.porDia.map(({ fecha, count }) => {
-    const d = new Date(fecha + 'T00:00:00')
-    return { dia: `${DIAS_ES[d.getDay()]} ${d.getDate()}`, count }
-  })
-  return { total: raw.total, hoy: raw.hoy, manana: raw.manana, tarde: raw.tarde, porGrado: raw.porGrado, porDia }
+function formatHoy(fecha: string): string {
+  return capitalizar(parseFecha(fecha).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' }))
+}
+
+function formatRango(desde: string, hasta: string): string {
+  const d1 = parseFecha(desde)
+  const d2 = parseFecha(hasta)
+  const mismoMes = d1.getMonth() === d2.getMonth()
+  const mesHasta = d2.toLocaleDateString('es-AR', { month: 'short' })
+  if (mismoMes) return `${d1.getDate()} al ${d2.getDate()} de ${mesHasta}`
+  const mesDesde = d1.toLocaleDateString('es-AR', { month: 'short' })
+  return `${d1.getDate()} ${mesDesde} al ${d2.getDate()} ${mesHasta}`
+}
+
+function formatMes(desde: string): string {
+  return capitalizar(parseFecha(desde).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }))
 }
 
 export function AdminDashboard() {
   const { profile } = useAuth()
-  const [metricas, setMetricas] = useState<Metricas | null>(null)
+  const [metricas, setMetricas] = useState<DashboardMetricsRPC | null>(null)
   const [loadingMetrics, setLoadingMetrics] = useState(true)
 
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoadingMetrics(true)
-      const { data, error } = await supabase.rpc('dashboard_metrics_30d')
+      const { data, error } = await supabase.rpc('dashboard_metrics_periodos')
       if (!error && data) {
-        setMetricas(toMetricas(data as DashboardMetricsRPC))
+        setMetricas(data as DashboardMetricsRPC)
       }
       setLoadingMetrics(false)
     }
@@ -59,7 +63,13 @@ export function AdminDashboard() {
     { to: '/admin/usuarios', icon: '👥', title: 'Usuarios', desc: 'Administrá roles: estudiante, admin y superadmin.', color: '#059669', id: 'card-usuarios' },
   ]
 
-  const maxDia = metricas ? Math.max(...metricas.porDia.map((d) => d.count), 1) : 1
+  const porDiaLabeled = metricas
+    ? metricas.porDia.map(({ fecha, count }) => {
+        const d = parseFecha(fecha)
+        return { dia: `${DIAS_ES[d.getDay()]} ${d.getDate()}`, count }
+      })
+    : []
+  const maxDia = Math.max(...porDiaLabeled.map((d) => d.count), 1)
   const topGrados = metricas
     ? Object.entries(metricas.porGrado).sort((a, b) => b[1] - a[1]).slice(0, 6)
     : []
@@ -102,92 +112,65 @@ export function AdminDashboard() {
         {/* ── Métricas ─────────────────────────────── */}
         <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            📈 Métricas — últimos 30 días
+            📈 Métricas
           </h2>
           {loadingMetrics && <div className="spinner" />}
         </div>
 
         {metricas && (
           <>
-            {/* Stat cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            {/* Tarjetas por período — hoy / semana / mes, cada una con su rango y su split por turno */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               {[
-                { label: 'Total registros', value: metricas.total, color: '#3b82f6', icon: '📋' },
-                { label: 'Llegadas hoy', value: metricas.hoy, color: '#f59e0b', icon: '📅' },
-                { label: 'Turno mañana', value: metricas.manana, color: '#22c55e', icon: '🌅' },
-                { label: 'Turno tarde', value: metricas.tarde, color: '#8b5cf6', icon: '🌆' },
-              ].map((stat) => (
-                <div key={stat.label} className="stat-card" style={{ borderTop: `3px solid ${stat.color}40` }}>
-                  <div style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{stat.icon}</div>
-                  <div className="stat-value" style={{ color: stat.color, fontSize: '1.75rem' }}>{stat.value}</div>
-                  <div className="stat-label">{stat.label}</div>
+                { key: 'hoy', icon: '📅', label: 'Hoy', subtitle: formatHoy(metricas.hoy.fecha), data: metricas.hoy, color: '#f59e0b' },
+                { key: 'semana', icon: '🗓️', label: 'Esta semana', subtitle: formatRango(metricas.semana.desde, metricas.semana.hasta), data: metricas.semana, color: '#3b82f6' },
+                { key: 'mes', icon: '📆', label: 'Este mes', subtitle: formatMes(metricas.mes.desde), data: metricas.mes, color: '#8b5cf6' },
+              ].map((p) => (
+                <div key={p.key} className="stat-card" style={{ borderTop: `3px solid ${p.color}40` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '1.1rem' }}>{p.icon}</span>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textAlign: 'right' }}>{p.subtitle}</span>
+                  </div>
+                  <div className="stat-value" style={{ color: p.color, fontSize: '1.75rem' }}>{p.data.total}</div>
+                  <div className="stat-label">{p.label}</div>
+                  <div style={{ display: 'flex', gap: '0.875rem', marginTop: '0.6rem', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <span style={{ color: '#4ade80' }}>🌅 {p.data.manana}</span>
+                    <span style={{ color: '#a78bfa' }}>🌆 {p.data.tarde}</span>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
-
-              {/* Gráfico últimos 7 días */}
-              <div className="glass-card" style={{ padding: '1.25rem' }}>
-                <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  📅 Llegadas últimos 7 días
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '100px' }}>
-                  {metricas.porDia.map((d) => (
-                    <div key={d.dia} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>{d.count || ''}</span>
-                      <div
-                        style={{
-                          width: '100%',
-                          background: d.count > 0 ? 'linear-gradient(180deg, #3b82f6, #1d4ed8)' : 'rgba(51,65,85,0.5)',
-                          borderRadius: '4px 4px 0 0',
-                          height: `${Math.max((d.count / maxDia) * 80, d.count > 0 ? 8 : 4)}px`,
-                          transition: 'height 0.3s ease',
-                          boxShadow: d.count > 0 ? '0 0 8px rgba(59,130,246,0.3)' : 'none',
-                        }}
-                      />
-                      <span style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', lineHeight: 1.2 }}>{d.dia}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Turno pie visual */}
-              <div className="glass-card" style={{ padding: '1.25rem' }}>
-                <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  🕐 Distribución por turno
-                </h3>
-                {metricas.total === 0 ? (
-                  <p style={{ color: '#475569', fontSize: '0.85rem' }}>Sin datos aún.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {[
-                      { label: 'Mañana', value: metricas.manana, color: '#22c55e' },
-                      { label: 'Tarde', value: metricas.tarde, color: '#8b5cf6' },
-                    ].map((t) => {
-                      const pct = metricas.total > 0 ? Math.round((t.value / metricas.total) * 100) : 0
-                      return (
-                        <div key={t.label}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>{t.label}</span>
-                            <span style={{ fontSize: '0.8rem', color: t.color, fontWeight: 700 }}>{t.value} ({pct}%)</span>
-                          </div>
-                          <div style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: t.color, borderRadius: '999px', transition: 'width 0.5s ease', boxShadow: `0 0 6px ${t.color}60` }} />
-                          </div>
-                        </div>
-                      )
-                    })}
+            {/* Gráfico de tendencia — últimos 7 días corridos (no confundir con "Esta semana", que es lunes a hoy) */}
+            <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                📊 Tendencia — últimos 7 días
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '100px' }}>
+                {porDiaLabeled.map((d) => (
+                  <div key={d.dia} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', height: '100%', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>{d.count || ''}</span>
+                    <div
+                      style={{
+                        width: '100%',
+                        background: d.count > 0 ? 'linear-gradient(180deg, #3b82f6, #1d4ed8)' : 'rgba(51,65,85,0.5)',
+                        borderRadius: '4px 4px 0 0',
+                        height: `${Math.max((d.count / maxDia) * 80, d.count > 0 ? 8 : 4)}px`,
+                        transition: 'height 0.3s ease',
+                        boxShadow: d.count > 0 ? '0 0 8px rgba(59,130,246,0.3)' : 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', lineHeight: 1.2 }}>{d.dia}</span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
 
-            {/* Top cursos */}
+            {/* Top cursos — del mes actual */}
             {topGrados.length > 0 && (
               <div className="glass-card" style={{ padding: '1.25rem' }}>
                 <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  🏫 Llegadas por curso (top {topGrados.length})
+                  🏫 Llegadas por curso — este mes (top {topGrados.length})
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
                   {topGrados.map(([curso, count], i) => (
