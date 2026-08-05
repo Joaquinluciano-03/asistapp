@@ -60,8 +60,7 @@ asistapp/
     │   ├── Login.tsx
     │   ├── EstudianteDashboard.tsx
     │   ├── AdminDashboard.tsx
-    │   ├── AdminScanner.tsx        # flujo de escaneo/registro (ver §6-7)
-    │   ├── AdminManual.tsx         # carga manual de llegadas (búsqueda + registro sin QR)
+    │   ├── AdminScanner.tsx        # flujo de escaneo/registro, incluye buscador manual (ver §6-7)
     │   ├── GestionUsuarios.tsx     # alta/baja/roles de usuarios
     │   └── Planillas.tsx           # exportación de asistencia
     ├── schemas/
@@ -91,7 +90,6 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 | `/estudiante` | `EstudianteDashboard` | `estudiante` |
 | `/admin` | `AdminDashboard` | staff |
 | `/admin/escanear` | `AdminScanner` | staff |
-| `/admin/carga-manual` | `AdminManual` | staff |
 | `/admin/planillas` | `Planillas` | staff |
 | `/admin/usuarios` | `GestionUsuarios` | staff |
 | `/`, `*` | redirect | → `/login` |
@@ -181,13 +179,15 @@ El sistema está dimensionado para hasta ~600 llegadas tarde/día (5 días/seman
 - **Dashboard (`AdminDashboard.tsx`):** antes traía todas las filas crudas de los últimos 30 días al cliente y las reducía en JS — a este volumen (hasta ~18.000 filas en 30 días) eso superaba el límite de 1000 filas por request de Supabase/PostgREST y las métricas quedaban mal, **sin ningún aviso**. Ahora usa la RPC `dashboard_metrics_30d()` (`security invoker`, respeta RLS igual que antes), que calcula todo con `count()`/`group by` **dentro** de Postgres y devuelve un JSON chico — el tamaño de la respuesta ya no depende de cuántas filas haya atrás.
 - **Planillas (`Planillas.tsx`):** el `.limit(500)` fijo se reemplazó por paginación real con `.range()` + botón **"Cargar más"** (decisión de producto: se prefirió sobre paginación numerada). El orden de la query incluye `id` como desempate final para que `.range()` sea determinístico y no salte/duplique filas cuando muchos registros comparten la misma `fecha`+`hora` (algo esperable a 600/día).
 - **Exportar a Excel:** ya no depende de lo cargado en pantalla — `handleExport` pagina en el fondo (lotes de 1000 vía `.range()`) hasta traer **todo** lo que matchea el filtro actual antes de generar el archivo (decisión de producto confirmada). Si el total supera 20.000 filas, se avisa que puede tardar unos segundos.
-- **Índices nuevos:** `idx_llegadas_fecha_hora` (fecha desc, hora desc) para el patrón de consulta más pesado del sistema a este volumen; `pg_trgm` + índices GIN en `students(nombre)`/`students(apellido)` para que la búsqueda `ilike '%...%'` del scanner/carga manual no se degrade si el padrón de alumnos también crece.
+- **Índices nuevos:** `idx_llegadas_fecha_hora` (fecha desc, hora desc) para el patrón de consulta más pesado del sistema a este volumen; `pg_trgm` + índices GIN en `students(nombre)`/`students(apellido)` para que la búsqueda `ilike '%...%'` del buscador manual en `AdminScanner.tsx` no se degrade si el padrón de alumnos también crece.
 - **Reset anual:** `reset_llegadas_anual()` pasó de `DELETE` a `TRUNCATE` — mismo resultado (vacía la tabla), pero no escanea fila por fila, relevante a ~150.000 filas/año.
 - **Fuera del alcance del código:** con este volumen de escrituras/lecturas diarias y picos de concurrencia en el horario de entrada, conviene confirmar que el proyecto de Supabase esté en un plan pago (no Free) — el almacenamiento no es un problema (el reset anual lo mantiene bajo), pero los límites de conexiones concurrentes del plan Free sí podrían notarse en la hora pico.
 
 ## 12. Puntos a tener en cuenta / mejoras futuras posibles
 
-**Corregido en `004_fix_rls_and_reset.sql` + cambios de código asociados** (ver §5 y §7 para el detalle): RLS del rol `preceptor` incompleta desde la 003 (no podía escanear, ver planillas, ni ser asignado), sin policy `UPDATE` en `students` (editar alumno no persistía para nadie del staff), sin policy `UPDATE` en `llegadas_tarde` (la sincronización retroactiva del historial fallaba en silencio), sin policies `DELETE` en `profiles`/`students` (el borrado no borraba nada, con toast de éxito falso), `AdminManual.tsx` no estaba enrutada, y las mutaciones en `GestionUsuarios.tsx` no verificaban filas afectadas antes de mostrar éxito.
+**Corregido en `004_fix_rls_and_reset.sql` + cambios de código asociados** (ver §5 y §7 para el detalle): RLS del rol `preceptor` incompleta desde la 003 (no podía escanear, ver planillas, ni ser asignado), sin policy `UPDATE` en `students` (editar alumno no persistía para nadie del staff), sin policy `UPDATE` en `llegadas_tarde` (la sincronización retroactiva del historial fallaba en silencio), sin policies `DELETE` en `profiles`/`students` (el borrado no borraba nada, con toast de éxito falso), y las mutaciones en `GestionUsuarios.tsx` no verificaban filas afectadas antes de mostrar éxito.
+
+**Nota histórica:** existió una página `AdminManual.tsx` para carga manual de llegadas, reconectada brevemente al router. Se eliminó por completo — el buscador manual ya integrado en `AdminScanner.tsx` (búsqueda por nombre/apellido + registro sin escanear QR) cubre el mismo caso de uso, así que la página separada era redundante.
 
 **Pendiente / riesgo aceptado:**
 - **Firma del QR falsa** (§6) — decisión explícita de no arreglar por ahora. Ver el detalle en esa sección.

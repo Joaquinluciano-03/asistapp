@@ -28,20 +28,7 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
           <li>Verificá que los datos mostrados (nombre, apellido, año y división) correspondan al alumno.</li>
           <li>Presioná <strong>Confirmar llegada tarde</strong> para registrar.</li>
           <li>Si ese alumno ya tiene una llegada registrada en el turno actual, el sistema te avisa y no permite duplicarla.</li>
-          <li>Si el QR no se lee, usá el buscador manual de la misma pantalla, o andá a <strong>Carga Manual</strong>.</li>
-        </ol>
-      ),
-    },
-    {
-      icon: '✍️',
-      title: 'Carga manual',
-      content: (
-        <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
-          <li>Ingresá a <strong>Carga Manual</strong> desde el menú — útil cuando un alumno no tiene o no puede mostrar su carnet.</li>
-          <li>Buscá al alumno por nombre o apellido.</li>
-          <li>Seleccionalo de la lista de resultados.</li>
-          <li>Presioná <strong>Registrar llegada tarde</strong> para confirmar.</li>
-          <li>Funciona igual que el escaneo: si ya tiene una llegada registrada en el turno actual, el sistema te avisa.</li>
+          <li>Si el QR no se lee, usá el buscador manual de la misma pantalla para encontrar al alumno por nombre o apellido y registrar su llegada sin escanear.</li>
         </ol>
       ),
     },
