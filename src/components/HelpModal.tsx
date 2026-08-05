@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 interface HelpModalProps {
-  role: 'admin' | 'superadmin' | 'estudiante'
+  role: 'admin' | 'superadmin' | 'estudiante' | 'preceptor'
   onClose: () => void
 }
 
@@ -135,9 +135,9 @@ const studentSections: Section[] = [
 export function HelpModal({ role, onClose }: HelpModalProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0)
 
-  const isAdmin = role === 'admin' || role === 'superadmin'
+  const isAdmin = role === 'admin' || role === 'superadmin' || role === 'preceptor'
   const sections = isAdmin ? adminSections : studentSections
-  const title = isAdmin ? '📖 Manual del Administrador' : '📖 Manual del Alumno'
+  const title = isAdmin ? '📖 Manual de uso (Staff)' : '📖 Manual del Alumno'
 
   return (
     <div

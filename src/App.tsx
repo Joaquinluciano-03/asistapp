@@ -12,7 +12,7 @@ const AdminScanner = lazy(() => import('./pages/AdminScanner').then(m => ({ defa
 const Planillas = lazy(() => import('./pages/Planillas').then(m => ({ default: m.Planillas })))
 const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios').then(m => ({ default: m.GestionUsuarios })))
 
-const ADMIN_ROLES = ['admin', 'superadmin'] as const
+const STAFF_ROLES = ['preceptor', 'admin', 'superadmin'] as const
 
 // Spinner de carga mientras se descarga el chunk de la página
 function PageLoader() {
@@ -57,11 +57,11 @@ export default function App() {
                 }
               />
 
-              {/* Admin / Superadmin */}
+              {/* Staff (Admin / Superadmin / Preceptor) */}
               <Route
                 path="/admin"
                 element={
-                  <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <AdminDashboard />
                   </ProtectedRoute>
                 }
@@ -69,7 +69,7 @@ export default function App() {
               <Route
                 path="/admin/escanear"
                 element={
-                  <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <AdminScanner />
                   </ProtectedRoute>
                 }
@@ -77,7 +77,7 @@ export default function App() {
               <Route
                 path="/admin/planillas"
                 element={
-                  <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <Planillas />
                   </ProtectedRoute>
                 }
@@ -85,7 +85,7 @@ export default function App() {
               <Route
                 path="/admin/usuarios"
                 element={
-                  <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <GestionUsuarios />
                   </ProtectedRoute>
                 }

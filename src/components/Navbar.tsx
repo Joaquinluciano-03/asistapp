@@ -6,12 +6,14 @@ import { HelpModal } from './HelpModal'
 
 const ROLE_LABEL: Record<string, string> = {
   estudiante: 'Estudiante',
+  preceptor: 'Preceptor',
   admin: 'Admin',
   superadmin: 'Superadmin',
 }
 
 const ROLE_BADGE: Record<string, string> = {
   estudiante: 'badge-primary',
+  preceptor: 'badge-success',
   admin: 'badge-warning',
   superadmin: 'badge-purple',
 }
@@ -62,7 +64,7 @@ export function Navbar() {
 
   if (!profile) return null
 
-  const isAdmin = profile.role === 'admin' || profile.role === 'superadmin'
+  const isAdmin = profile.role === 'admin' || profile.role === 'superadmin' || profile.role === 'preceptor'
 
   const adminLinks = [
     { to: '/admin', label: '🏠 Inicio', exact: true },

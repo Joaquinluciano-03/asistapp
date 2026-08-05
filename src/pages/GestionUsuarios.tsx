@@ -8,12 +8,14 @@ import { GRADOS, DIVISIONES } from '../schemas/studentSchema'
 
 const ROLE_LABEL: Record<UserRole, string> = {
   estudiante: 'Estudiante',
+  preceptor: 'Preceptor',
   admin: 'Admin',
-  superadmin: 'Superadmin',
+  superadmin: 'S. Admin',
 }
 
 const ROLE_BADGE: Record<UserRole, string> = {
   estudiante: 'badge-primary',
+  preceptor: 'badge-success',
   admin: 'badge-warning',
   superadmin: 'badge-purple',
 }
@@ -81,6 +83,8 @@ export function GestionUsuarios() {
   // ── Permisos ──────────────────────────────────────────────────────
   const canModify = (target: Profile): boolean => {
     if (!myProfile) return false
+    // Preceptor no puede cambiar roles ni eliminar usuarios
+    if (myProfile.role === 'preceptor') return false
     if (target.id === myProfile.id) return false
     if (target.role === 'superadmin') return false
     return true
@@ -88,8 +92,9 @@ export function GestionUsuarios() {
 
   const allowedRoles = (target: Profile): UserRole[] => {
     if (!myProfile) return []
+    if (myProfile.role === 'preceptor') return []
     if (target.role === 'superadmin') return ['superadmin']
-    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') return ['estudiante', 'admin']
+    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') return ['estudiante', 'preceptor', 'admin']
     return []
   }
 
@@ -119,22 +124,6 @@ export function GestionUsuarios() {
       toastSuccess(`Usuario ${target.email} eliminado`)
     }
     setDeleting(null)
-  }
-
-  // ── Reiniciar datos del alumno ─────────────────────────────────────
-  const handleResetStudent = async (target: Profile) => {
-    setConfirm(null)
-    setResetting(target.id)
-    const s = students[target.id]
-    if (s) {
-      const { error } = await supabase.from('students').delete().eq('id', s.id)
-      if (error) { toastError(`Error: ${error.message}`) }
-      else {
-        setStudents((prev) => { const next = { ...prev }; delete next[target.id]; return next })
-        toastSuccess(`Datos de ${target.email} reiniciados. El alumno podrá ingresarlos nuevamente.`)
-      }
-    }
-    setResetting(null)
   }
 
   // ── Editar datos del alumno ────────────────────────────────────────
@@ -197,7 +186,7 @@ export function GestionUsuarios() {
               {profiles.length} usuario{profiles.length !== 1 ? 's' : ''} registrado{profiles.length !== 1 ? 's' : ''} — {studentCount} estudiante{studentCount !== 1 ? 's' : ''}
             </p>
           </div>
-          {studentCount > 0 && (
+          {studentCount > 0 && myProfile?.role !== 'preceptor' && (
             <button
               id="btn-eliminar-todos-estudiantes"
               onClick={() => setConfirm({ type: 'delete_all_students' })}
@@ -314,21 +303,11 @@ export function GestionUsuarios() {
                                     <button
                                       id={`btn-editar-datos-${p.id}`}
                                       onClick={() => handleOpenEdit(p)}
-                                      disabled={isDeleting || isSaving || resetting === p.id}
+                                      disabled={isDeleting || isSaving}
                                       className="btn btn-secondary btn-sm"
                                       title="Editar datos del alumno"
                                       style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem' }}
                                     >✏️</button>
-                                    <button
-                                      id={`btn-reiniciar-datos-${p.id}`}
-                                      onClick={() => setConfirm({ type: 'reset_student', target: p })}
-                                      disabled={isDeleting || isSaving || resetting === p.id}
-                                      className="btn btn-danger btn-sm"
-                                      title="Reiniciar datos (el alumno vuelve a ingresarlos)"
-                                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem' }}
-                                    >
-                                      {resetting === p.id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : '🔄'}
-                                    </button>
                                   </>
                                 ) : (
                                   <span style={{ fontSize: '0.75rem', color: '#475569' }}>Sin datos</span>
@@ -369,7 +348,8 @@ export function GestionUsuarios() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
             <div><span className="badge badge-primary" style={{ marginRight: '0.5rem' }}>Estudiante</span>Puede completar sus datos y generar su QR personal.</div>
-            <div><span className="badge badge-warning" style={{ marginRight: '0.5rem' }}>Admin</span>Escanea QR, ve planillas, exporta Excel y administra roles.</div>
+            <div><span className="badge badge-success" style={{ marginRight: '0.5rem' }}>Preceptor</span>Escanea QR y registra asistencias, ve planillas, exporta a Excel y puede editar datos de alumnos. No puede cambiar roles ni eliminar cuentas.</div>
+            <div><span className="badge badge-warning" style={{ marginRight: '0.5rem' }}>Admin</span>Igual que preceptor, pero puede cambiar roles, eliminar usuarios individuales y eliminar todos los estudiantes.</div>
             <div><span className="badge badge-purple" style={{ marginRight: '0.5rem' }}>Superadmin</span>Control total. No puede ser degradado por un admin.</div>
           </div>
         </div>

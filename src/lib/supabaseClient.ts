@@ -18,7 +18,7 @@ export const supabase = createClient(url, key, {
 
 export const SUPABASE_CONFIGURED = Boolean(supabaseUrl && supabaseAnonKey)
 
-export type UserRole = 'estudiante' | 'admin' | 'superadmin'
+export type UserRole = 'estudiante' | 'preceptor' | 'admin' | 'superadmin'
 
 export interface Profile {
   id: string
