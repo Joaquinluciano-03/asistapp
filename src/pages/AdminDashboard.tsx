@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
-import type { LlegadaTarde } from '../lib/supabaseClient'
 
 interface Metricas {
   total: number
@@ -14,38 +13,27 @@ interface Metricas {
   porDia: { dia: string; count: number }[]
 }
 
-function calcularMetricas(data: LlegadaTarde[]): Metricas {
-  const hoyStr = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD
-  const hoy = data.filter((r) => r.fecha === hoyStr).length
-  const manana = data.filter((r) => r.turno === 'mañana').length
-  const tarde = data.filter((r) => r.turno === 'tarde').length
+interface DashboardMetricsRPC {
+  total: number
+  hoy: number
+  manana: number
+  tarde: number
+  porGrado: Record<string, number>
+  porDia: { fecha: string; count: number }[]
+}
 
-  const porGrado: Record<string, number> = {}
-  data.forEach((r) => {
-    const key = `${r.grado} ${r.division}`
-    porGrado[key] = (porGrado[key] ?? 0) + 1
-  })
+const DIAS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
-  // Últimos 7 días
-  const dias: Record<string, number> = {}
-  const DIAS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    const key = d.toLocaleDateString('sv-SE')
-    const label = `${DIAS_ES[d.getDay()]} ${d.getDate()}`
-    dias[key] = 0
-    // store label as key
-    Object.defineProperty(dias, key, { value: 0, writable: true, enumerable: true })
-    dias[key] = data.filter((r) => r.fecha === key).length
-  }
-
-  const porDia = Object.entries(dias).map(([isoDate, count]) => {
-    const d = new Date(isoDate + 'T00:00:00')
+// dashboard_metrics_30d() calcula todo con count()/group by dentro de
+// Postgres — evita traer al cliente las filas crudas de los últimos 30
+// días, que a este volumen (cientos por día) superan el límite de 1000
+// filas por request de Supabase/PostgREST.
+function toMetricas(raw: DashboardMetricsRPC): Metricas {
+  const porDia = raw.porDia.map(({ fecha, count }) => {
+    const d = new Date(fecha + 'T00:00:00')
     return { dia: `${DIAS_ES[d.getDay()]} ${d.getDate()}`, count }
   })
-
-  return { total: data.length, hoy, manana, tarde, porGrado, porDia }
+  return { total: raw.total, hoy: raw.hoy, manana: raw.manana, tarde: raw.tarde, porGrado: raw.porGrado, porDia }
 }
 
 export function AdminDashboard() {
@@ -56,15 +44,10 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoadingMetrics(true)
-      // Traer últimos 30 días
-      const hace30 = new Date()
-      hace30.setDate(hace30.getDate() - 30)
-      const { data } = await supabase
-        .from('llegadas_tarde')
-        .select('fecha, turno, grado, division')
-        .gte('fecha', hace30.toLocaleDateString('sv-SE'))
-        .order('fecha', { ascending: false })
-      setMetricas(calcularMetricas((data ?? []) as LlegadaTarde[]))
+      const { data, error } = await supabase.rpc('dashboard_metrics_30d')
+      if (!error && data) {
+        setMetricas(toMetricas(data as DashboardMetricsRPC))
+      }
       setLoadingMetrics(false)
     }
     fetchMetrics()

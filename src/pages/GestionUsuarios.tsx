@@ -102,8 +102,9 @@ export function GestionUsuarios() {
     if (!canModify(target)) { toastError('Sin permisos.'); return }
     if (newRole === 'superadmin') { toastError('El rol superadmin es exclusivo.'); return }
     setSaving(target.id)
-    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', target.id)
+    const { data, error } = await supabase.from('profiles').update({ role: newRole }).eq('id', target.id).select()
     if (error) { toastError(`Error al actualizar: ${error.message}`) }
+    else if (!data || data.length === 0) { toastError('No se pudo actualizar el rol (sin permisos).') }
     else {
       setProfiles((prev) => prev.map((p) => p.id === target.id ? { ...p, role: newRole } : p))
       toastSuccess(`Rol de ${target.email} → "${ROLE_LABEL[newRole]}"`)
@@ -115,8 +116,9 @@ export function GestionUsuarios() {
   const handleDeleteUser = async (target: Profile) => {
     setConfirm(null)
     setDeleting(target.id)
-    const { error } = await supabase.from('profiles').delete().eq('id', target.id)
+    const { data, error } = await supabase.from('profiles').delete().eq('id', target.id).select()
     if (error) { toastError(`Error al eliminar: ${error.message}`) }
+    else if (!data || data.length === 0) { toastError('No se pudo eliminar (sin permisos).') }
     else {
       setProfiles((prev) => prev.filter((p) => p.id !== target.id))
       setStudents((prev) => { const next = { ...prev }; delete next[target.id]; return next })
@@ -137,21 +139,36 @@ export function GestionUsuarios() {
     setEditSaving(true)
     const { form: f, student: s, profile } = editModal
 
-    // CRÍTICO 4: Actualizar students
-    const { error } = await supabase.from('students').update({ ...f, updated_at: new Date().toISOString() }).eq('id', s.id)
+    // Actualizar students
+    const { data: studentData, error } = await supabase
+      .from('students')
+      .update({ ...f, updated_at: new Date().toISOString() })
+      .eq('id', s.id)
+      .select()
     if (error) {
       toastError(`Error: ${error.message}`)
       setEditSaving(false)
       return
     }
+    if (!studentData || studentData.length === 0) {
+      toastError('No se pudo guardar (sin permisos).')
+      setEditSaving(false)
+      return
+    }
 
-    // CRÍTICO 4: Mantener consistencia — actualizar snapshots históricos en llegadas_tarde
-    await supabase.from('llegadas_tarde').update({
+    // Mantener consistencia — actualizar snapshots históricos en llegadas_tarde
+    const { error: llegadasError } = await supabase.from('llegadas_tarde').update({
       nombre: f.nombre,
       apellido: f.apellido,
       grado: f.grado,
       division: f.division,
     }).eq('student_id', s.id)
+
+    if (llegadasError) {
+      toastError(`Datos guardados, pero falló la sincronización del historial: ${llegadasError.message}`)
+      setEditSaving(false)
+      return
+    }
 
     setStudents((prev) => ({ ...prev, [profile.id]: { ...s, ...f } }))
     toastSuccess(`Datos de ${profile.email} actualizados`)
@@ -163,10 +180,10 @@ export function GestionUsuarios() {
   const handleDeleteAllStudents = async () => {
     setConfirm(null)
     setDeletingAll(true)
-    const { error } = await supabase.from('profiles').delete().eq('role', 'estudiante')
+    const { data, error } = await supabase.from('profiles').delete().eq('role', 'estudiante').select()
     if (error) { toastError(`Error al eliminar estudiantes: ${error.message}`) }
     else {
-      const removed = profiles.filter((p) => p.role === 'estudiante').length
+      const removed = data?.length ?? 0
       setProfiles((prev) => prev.filter((p) => p.role !== 'estudiante'))
       toastSuccess(`${removed} estudiante${removed !== 1 ? 's' : ''} eliminado${removed !== 1 ? 's' : ''}`)
     }

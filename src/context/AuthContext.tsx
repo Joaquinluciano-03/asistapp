@@ -35,12 +35,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
 
-    if (error) {
-      console.error('Error al obtener perfil:', error)
-      setProfile(null)
-    } else {
+    if (!error) {
       setProfile(data as Profile)
+      return
     }
+
+    if (error.code === 'PGRST116') {
+      // Sin perfil: primer login sin trigger, o cuenta reseteada por un admin.
+      // ensure_own_profile() lo recrea (valida dominio y el caso superadmin).
+      const { data: ensured, error: ensureError } = await supabase.rpc('ensure_own_profile')
+      if (ensureError) {
+        console.error('Error al recrear perfil:', ensureError)
+        setProfile(null)
+      } else {
+        setProfile(ensured as Profile)
+      }
+      return
+    }
+
+    console.error('Error al obtener perfil:', error)
+    setProfile(null)
   }, [])
 
   const refreshProfile = useCallback(async () => {

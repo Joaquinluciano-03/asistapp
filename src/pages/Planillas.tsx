@@ -16,11 +16,18 @@ const METODO_BADGE: Record<string, string> = {
   'manual': 'badge-purple',
 }
 
+const PAGE_SIZE = 500
+const EXPORT_BATCH_SIZE = 1000
+const EXPORT_WARNING_THRESHOLD = 20000
+
 export function Planillas() {
-  const { toastError } = useToast()
+  const { toastError, toastWarning } = useToast()
 
   const [llegadas, setLlegadas] = useState<LlegadaTarde[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
@@ -28,13 +35,18 @@ export function Planillas() {
   const [filtroGrado, setFiltroGrado] = useState('')
   const [filtroDivision, setFiltroDivision] = useState('')
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  // Query base con los filtros actuales — se reusa tanto para paginar en
+  // pantalla como para traer TODO el filtro al exportar. El orden incluye
+  // 'id' como desempate final para que .range() sea determinístico (sin
+  // eso, filas con la misma fecha+hora podrían duplicarse o saltearse
+  // entre páginas).
+  const buildQuery = useCallback(() => {
     let query = supabase
       .from('llegadas_tarde')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .order('hora', { ascending: false })
+      .order('id', { ascending: true })
 
     if (filtroFechaDesde) query = query.gte('fecha', filtroFechaDesde)
     if (filtroFechaHasta) query = query.lte('fecha', filtroFechaHasta)
@@ -42,25 +54,67 @@ export function Planillas() {
     if (filtroGrado) query = query.eq('grado', filtroGrado)
     if (filtroDivision) query = query.eq('division', filtroDivision)
 
-    const { data, error } = await query.limit(500)
+    return query
+  }, [filtroFechaDesde, filtroFechaHasta, filtroTurno, filtroGrado, filtroDivision])
+
+  const fetchPage = useCallback(async (offset: number, append: boolean) => {
+    if (append) setLoadingMore(true)
+    else setLoading(true)
+
+    const { data, error, count } = await buildQuery().range(offset, offset + PAGE_SIZE - 1)
+
     if (error) {
       toastError('Error al cargar los datos')
     } else {
-      setLlegadas((data ?? []) as LlegadaTarde[])
+      const rows = (data ?? []) as LlegadaTarde[]
+      setLlegadas((prev) => (append ? [...prev, ...rows] : rows))
+      setTotalCount(count ?? 0)
     }
-    setLoading(false)
-  }, [filtroFechaDesde, filtroFechaHasta, filtroTurno, filtroGrado, filtroDivision, toastError])
 
+    if (append) setLoadingMore(false)
+    else setLoading(false)
+  }, [buildQuery, toastError])
+
+  // Cambió algún filtro -> volver a la primera página
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchPage(0, false)
+  }, [fetchPage])
 
-  const handleExport = () => {
-    if (llegadas.length === 0) {
+  const handleLoadMore = () => {
+    fetchPage(llegadas.length, true)
+  }
+
+  const fetchAllForExport = useCallback(async (): Promise<LlegadaTarde[]> => {
+    let offset = 0
+    let all: LlegadaTarde[] = []
+    for (;;) {
+      const { data, error } = await buildQuery().range(offset, offset + EXPORT_BATCH_SIZE - 1)
+      if (error) throw error
+      const rows = (data ?? []) as LlegadaTarde[]
+      all = all.concat(rows)
+      if (rows.length < EXPORT_BATCH_SIZE) break
+      offset += EXPORT_BATCH_SIZE
+    }
+    return all
+  }, [buildQuery])
+
+  const handleExport = async () => {
+    if (totalCount === 0) {
       toastError('No hay datos para exportar')
       return
     }
-    exportarLlegadasExcel(llegadas)
+    setExporting(true)
+    try {
+      if (totalCount > EXPORT_WARNING_THRESHOLD) {
+        toastWarning(`Exportando ${totalCount.toLocaleString('es-AR')} registros, puede tardar unos segundos...`)
+      }
+      const all = await fetchAllForExport()
+      exportarLlegadasExcel(all)
+    } catch {
+      toastError('Error al exportar los datos')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const formatFecha = (fecha: string) => {
@@ -70,6 +124,8 @@ export function Planillas() {
 
   const formatHora = (hora: string) => hora.slice(0, 5)
 
+  const hasMore = llegadas.length < totalCount
+
   return (
     <>
       <Navbar />
@@ -78,27 +134,20 @@ export function Planillas() {
           <div>
             <h1 className="page-title">📊 Planillas de Llegadas</h1>
             <p className="page-subtitle">
-              {loading ? 'Cargando...' : `${llegadas.length} registro${llegadas.length !== 1 ? 's' : ''} encontrado${llegadas.length !== 1 ? 's' : ''}`}
+              {loading
+                ? 'Cargando...'
+                : `${llegadas.length.toLocaleString('es-AR')} de ${totalCount.toLocaleString('es-AR')} registro${totalCount !== 1 ? 's' : ''}`}
             </p>
           </div>
           <button
             id="btn-exportar-excel"
             onClick={handleExport}
             className="btn btn-success"
-            disabled={loading || llegadas.length === 0}
+            disabled={loading || exporting || totalCount === 0}
           >
-            ⬇ Exportar a Excel
+            {exporting ? <><div className="spinner" /> Preparando export...</> : '⬇ Exportar a Excel'}
           </button>
         </div>
-
-        {/* GRAVE 7: Aviso cuando se alcanza el límite de 500 registros */}
-        {!loading && llegadas.length >= 500 && (
-          <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '0.75rem', padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.83rem' }}>
-            <span style={{ fontSize: '1.1rem' }}>⚠️</span>
-            <span style={{ color: '#fbbf24', fontWeight: 600 }}>Se alcanzó el límite de 500 registros.</span>
-            <span style={{ color: '#94a3b8' }}>El reporte y el Excel pueden estar incompletos. Acotá el rango de fechas para ver todos los datos.</span>
-          </div>
-        )}
 
         {/* Filters */}
         <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
@@ -245,6 +294,21 @@ export function Planillas() {
               </table>
             )}
           </div>
+
+          {!loading && hasMore && (
+            <div style={{ padding: '1.25rem', textAlign: 'center', borderTop: '1px solid rgba(148,163,184,0.08)' }}>
+              <button
+                id="btn-cargar-mas"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="btn btn-secondary btn-sm"
+              >
+                {loadingMore
+                  ? <><div className="spinner" /> Cargando...</>
+                  : `Cargar más (${llegadas.length.toLocaleString('es-AR')} de ${totalCount.toLocaleString('es-AR')})`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
