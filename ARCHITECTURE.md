@@ -40,7 +40,10 @@ asistapp/
 │   ├── 002_fix_unique_constraint.sql
 │   ├── 003_add_preceptor_role.sql
 │   ├── 004_fix_rls_and_reset.sql # RLS de preceptor, edición/borrado de alumnos, reset (ver §5 y §7)
-│   └── 005_scale_hardening.sql   # RPC de métricas, índices, TRUNCATE anual (ver §11)
+│   ├── 005_scale_hardening.sql   # RPC de métricas, índices, TRUNCATE anual (ver §11)
+│   ├── 006_dashboard_periodos.sql # RPC de métricas hoy/semana/mes (ver §7)
+│   ├── 007_fix_profiles_read_policy.sql # agrega preceptor a la lectura de profiles
+│   └── 008_cleanup_student_on_role_change.sql # limpia la ficha de alumno al ascender a staff (ver §7)
 └── src/
     ├── main.tsx                  # bootstrap: createRoot + <StrictMode><App /></StrictMode>
     ├── App.tsx                   # BrowserRouter + rutas (ver §4)
@@ -158,6 +161,8 @@ Validación con zod en `src/schemas/studentSchema.ts` (`grado` limitado a 1°–
 **Borrado = reset sin perder historial** (`004_fix_rls_and_reset.sql`):
 - `students.profile_id` ahora referencia `profiles.id` (antes `auth.users.id`) con `on delete cascade` → borrar un `profiles` row borra automáticamente su `students` row.
 - `llegadas_tarde.student_id` es nullable con `on delete set null` (antes `on delete cascade`) → al borrarse el `students` row, sus filas en `llegadas_tarde` **sobreviven** con `student_id = null`, conservando el snapshot de nombre/apellido/grado/división ya guardado.
+
+**Limpieza al ascender un alumno a staff** (`008_cleanup_student_on_role_change.sql`): cambiar el `role` de un perfil de `estudiante` a `preceptor`/`admin` es un `UPDATE`, no dispara la cascada del punto anterior (que solo aplica a un `DELETE`). El trigger `after_profile_role_change_cleanup` (`AFTER UPDATE on profiles`, `security definer`) detecta ese cambio de rol y borra la fila de `students` correspondiente — mismo resultado que el reset manual (el historial en `llegadas_tarde` se conserva vía `SET NULL`), pero disparado automáticamente para que la ficha de alumno de alguien que pasó a ser staff no quede huérfana ni siga siendo escaneable/buscable como alumno.
 
 **Reset anual:** el 31 de diciembre (hora Argentina), `netlify/functions/reset-anual.ts` dispara la RPC `reset_llegadas_anual()`, que vacía **todas** las filas de `llegadas_tarde` con `TRUNCATE` (borrado definitivo, sin archivo — ver §11 sobre por qué `TRUNCATE` y no `DELETE`). No toca `profiles` ni `students`. El guard de fecha vive en la función SQL, así que es seguro invocarla todos los días — solo actúa el 31/12.
 
