@@ -21,12 +21,6 @@ export const studentSchema = z.object({
 
 export type StudentFormData = z.infer<typeof studentSchema>
 
-export const manualLlegadaSchema = z.object({
-  student_id: z.string().uuid('ID de estudiante inválido'),
-})
-
-export type ManualLlegadaData = z.infer<typeof manualLlegadaSchema>
-
 export const GRADOS = [
   '1° año', '2° año', '3° año', '4° año', '5° año', '6° año', '7° año'
 ]

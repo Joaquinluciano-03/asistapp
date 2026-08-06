@@ -40,7 +40,10 @@ export interface Student {
 
 export interface LlegadaTarde {
   id: string
-  student_id: string
+  // Nullable: al resetear un alumno (ver migration 004), su fila en
+  // students se borra en cascada y aquí queda en NULL, preservando el
+  // resto de la fila (snapshot de nombre/apellido/grado/división).
+  student_id: string | null
   nombre: string
   apellido: string
   grado: string
