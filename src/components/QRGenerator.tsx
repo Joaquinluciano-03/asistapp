@@ -99,10 +99,13 @@ async function drawFront(
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'
   ctx.font = `bold ${11 * S}px Inter, sans-serif`
-  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, offsetY + 26 * S)
+  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, offsetY + 20 * S)
+  ctx.fillStyle = 'rgba(220,230,255,0.9)'
+  ctx.font = `bold ${7 * S}px Inter, sans-serif`
+  ctx.fillText('NIVEL SECUNDARIO', CW / 2, offsetY + 34 * S)
   ctx.fillStyle = 'rgba(180,200,255,0.8)'
-  ctx.font = `${8 * S}px Inter, sans-serif`
-  ctx.fillText('Victoria — Buenos Aires', CW / 2, offsetY + 42 * S)
+  ctx.font = `${7 * S}px Inter, sans-serif`
+  ctx.fillText('Victoria — San Fernando', CW / 2, offsetY + 48 * S)
 
   // Foto circular (centrada)
   const PR = 56 * S          // radio foto
@@ -206,10 +209,13 @@ async function drawBack(
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'
   ctx.font = `bold ${11 * S}px Inter, sans-serif`
-  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, 26 * S)
+  ctx.fillText('INSTITUTO DON ORIONE', CW / 2, 20 * S)
+  ctx.fillStyle = 'rgba(220,230,255,0.9)'
+  ctx.font = `bold ${7 * S}px Inter, sans-serif`
+  ctx.fillText('NIVEL SECUNDARIO', CW / 2, 34 * S)
   ctx.fillStyle = 'rgba(180,200,255,0.8)'
-  ctx.font = `${8 * S}px Inter, sans-serif`
-  ctx.fillText('Carnet de Asistencia', CW / 2, 42 * S)
+  ctx.font = `${7 * S}px Inter, sans-serif`
+  ctx.fillText('Carnet Estudiantil', CW / 2, 48 * S)
 
   // Logo en el header (trasera)
   const logo = await loadImage('/favicon.ico')
