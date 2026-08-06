@@ -10,7 +10,8 @@ import { Navbar } from '../components/Navbar'
 import { HelpModal } from '../components/HelpModal'
 
 export function EstudianteDashboard() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
+  const isUsuarioNuevo = profile?.role === 'usuario_nuevo'
   const { toastSuccess, toastError } = useToast()
 
   const [student, setStudent] = useState<Student | null>(null)
@@ -102,6 +103,10 @@ export function EstudianteDashboard() {
         .single()
       if (error) throw error
       setStudent(data as Student)
+      // Si era "usuario_nuevo", el trigger de la DB ya lo ascendió a
+      // "estudiante" en el mismo insert — hay que refrescar el perfil en
+      // memoria para que el resto de la app (Navbar, ProtectedRoute) lo vea.
+      if (isUsuarioNuevo) await refreshProfile()
       toastSuccess('¡Datos guardados! Tu QR fue generado.')
       setShowQR(true)
     } catch (err: unknown) {
@@ -133,9 +138,11 @@ export function EstudianteDashboard() {
       <Navbar />
       <div className="page-container" style={{ maxWidth: 800 }}>
         <div className="page-header">
-          <h1 className="page-title">Mi QR de Asistencia</h1>
+          <h1 className="page-title">{isUsuarioNuevo && !student ? '👋 ¡Bienvenido/a!' : 'Mi QR de Asistencia'}</h1>
           <p className="page-subtitle">
-            Completá tus datos para generar tu código QR personal.
+            {isUsuarioNuevo && !student
+              ? 'Si sos alumno/a, completá tus datos acá abajo para registrarte y generar tu código QR.'
+              : 'Completá tus datos para generar tu código QR personal.'}
           </p>
         </div>
 
@@ -166,6 +173,11 @@ export function EstudianteDashboard() {
             // FORM — primer ingreso
             <div className="glass-card" style={{ padding: '1.75rem' }}>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '1rem' }}>📝 Mis datos</h2>
+
+              {/* 🚨 Advertencia — personal del colegio, más importante, va primero */}
+              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.625rem', padding: '0.875rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#fca5a5', lineHeight: 1.65 }}>
+                🚨 <strong>¿Sos personal del colegio (preceptor/administrador)?</strong> No cargues este formulario — comunicate con un administrador para que te asigne el rol correspondiente. Este formulario es solo para alumnos.
+              </div>
 
               {/* ⚠️ Advertencia */}
               <div style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.4)', borderRadius: '0.625rem', padding: '0.875rem 1rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#fde047', lineHeight: 1.65 }}>

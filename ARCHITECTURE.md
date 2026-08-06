@@ -43,7 +43,9 @@ asistapp/
 │   ├── 005_scale_hardening.sql   # RPC de métricas, índices, TRUNCATE anual (ver §11)
 │   ├── 006_dashboard_periodos.sql # RPC de métricas hoy/semana/mes (ver §7)
 │   ├── 007_fix_profiles_read_policy.sql # agrega preceptor a la lectura de profiles
-│   └── 008_cleanup_student_on_role_change.sql # limpia la ficha de alumno al ascender a staff (ver §7)
+│   ├── 008_cleanup_student_on_role_change.sql # limpia la ficha de alumno al ascender a staff (ver §7)
+│   ├── 009_add_usuario_nuevo_role.sql # agrega el valor 'usuario_nuevo' al enum de roles
+│   └── 010_usuario_nuevo_defaults.sql # rol por defecto + auto-ascenso a estudiante (ver §5)
 └── src/
     ├── main.tsx                  # bootstrap: createRoot + <StrictMode><App /></StrictMode>
     ├── App.tsx                   # BrowserRouter + rutas (ver §4)
@@ -91,7 +93,7 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 | Ruta | Página | Roles permitidos |
 |---|---|---|
 | `/login` | `Login` | pública |
-| `/estudiante` | `EstudianteDashboard` | `estudiante` |
+| `/estudiante` | `EstudianteDashboard` | `estudiante`, `usuario_nuevo` |
 | `/admin` | `AdminDashboard` | staff |
 | `/admin/escanear` | `AdminScanner` | staff |
 | `/admin/planillas` | `Planillas` | staff |
@@ -108,9 +110,13 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 - Login **solo Google OAuth**, restringido al dominio `donorionevictoria.com.ar` (`hd` param en `signInWithOAuth`).
 - Sesión persistida y refrescada automáticamente por el SDK de Supabase (`persistSession: true`, `autoRefreshToken: true`).
 - Tras `SIGNED_IN`, espera 800ms antes de leer `profiles` (da tiempo a que el trigger `handle_new_user` cree la fila del perfil en el primer login).
-- **Auto-recuperación de perfil:** si `fetchProfile` no encuentra fila en `profiles` (`PGRST116`) — típicamente porque un admin "eliminó" (reseteó) la cuenta — llama a la RPC `ensure_own_profile()` (`004_fix_rls_and_reset.sql`), que la recrea con rol `estudiante` por defecto (o `superadmin` si es el email designado), validando el dominio igual que el trigger original. Esto reemplazó la vieja lógica de auto-promoción/degradación de superadmin en el cliente, que nunca podía tener efecto real (la policy de roles prohíbe que un usuario cambie su propio rol).
+- **Auto-recuperación de perfil:** si `fetchProfile` no encuentra fila en `profiles` (`PGRST116`) — típicamente porque un admin "eliminó" (reseteó) la cuenta — llama a la RPC `ensure_own_profile()` (`004_fix_rls_and_reset.sql`), que la recrea con rol `usuario_nuevo` por defecto (o `superadmin` si es el email designado, ver más abajo), validando el dominio igual que el trigger original. Esto reemplazó la vieja lógica de auto-promoción/degradación de superadmin en el cliente, que nunca podía tener efecto real (la policy de roles prohíbe que un usuario cambie su propio rol).
 
-**Roles** (enum Postgres `user_role`): `estudiante`, `preceptor`, `admin`, `superadmin`, columna `role` en tabla `profiles`.
+**Roles** (enum Postgres `user_role`): `usuario_nuevo`, `estudiante`, `preceptor`, `admin`, `superadmin`, columna `role` en tabla `profiles`.
+
+**`usuario_nuevo` — rol inicial automático** (`009_add_usuario_nuevo_role.sql` + `010_usuario_nuevo_defaults.sql`): todo login nuevo entra con este rol (excepto el email designado como superadmin) — sin ningún permiso, no aparece en ninguna policy RLS con privilegios. Dos caminos, ninguno forzado desde la UI:
+- Carga sus datos en `/estudiante` (misma pantalla que un `estudiante`, ruta compartida) → el trigger `promote_to_estudiante_on_registro` (`AFTER INSERT on students`) lo asciende a `estudiante` automáticamente en el mismo insert. `EstudianteDashboard.tsx` llama a `refreshProfile()` justo después para que el cliente vea el rol nuevo sin recargar.
+- No hace nada → sigue pudiendo loguearse indefinidamente como `usuario_nuevo` (ve el mismo formulario cada vez) hasta que un admin le asigne un rol a mano desde `GestionUsuarios.tsx`. Esta opción no se ofrece como botón — es simplemente "no completar el formulario".
 
 **Restricción de acciones destructivas al rol `preceptor`** (`src/pages/GestionUsuarios.tsx`, commit `555774f`):
 ```ts
@@ -123,7 +129,7 @@ const canModify = (target) => {
 ```
 Respaldo a nivel de base de datos vía RLS (`get_role()`), incluyendo desde `004_fix_rls_and_reset.sql`: `preceptor` puede leer/insertar `llegadas_tarde`, leer/editar `students`, pero no puede cambiar roles ni borrar (`profiles`/`students` DELETE solo para `admin`/`superadmin`). Un `admin` puede ascender a otro usuario a `preceptor` o `admin` (no solo `superadmin` puede — decisión de producto confirmada, cualquier admin puede crear pares admin).
 
-**Borrado = reset, no baja permanente.** "Eliminar usuario"/"Eliminar todos los estudiantes" en `GestionUsuarios.tsx` borran la fila de `profiles` (y en cascada la de `students`, ver §7), pero **no tocan `auth.users`** — la persona puede volver a loguearse normalmente y, gracias a `ensure_own_profile()`, se le recrea un perfil `estudiante` en blanco para que vuelva a cargar sus datos o sea reasignada a un rol por un admin. El historial de `llegadas_tarde` de un alumno reseteado **se conserva** (ver §7).
+**Borrado = reset, no baja permanente.** "Eliminar usuario"/"Eliminar todos los estudiantes" en `GestionUsuarios.tsx` borran la fila de `profiles` (y en cascada la de `students`, ver §7), pero **no tocan `auth.users`** — la persona puede volver a loguearse normalmente y, gracias a `ensure_own_profile()`, se le recrea un perfil `usuario_nuevo` en blanco para que vuelva a cargar sus datos o sea reasignada a un rol por un admin. El historial de `llegadas_tarde` de un alumno reseteado **se conserva** (ver §7).
 
 No hay hook compartido `usePermissions`/`hasRole`; los chequeos de rol se hacen ad hoc (`profile.role === '...'`) en `GestionUsuarios.tsx`, `Navbar.tsx`, `AdminDashboard.tsx`, `HelpModal.tsx`, `EstudianteDashboard.tsx`.
 
@@ -164,7 +170,7 @@ Validación con zod en `src/schemas/studentSchema.ts` (`grado` limitado a 1°–
 - `students.profile_id` ahora referencia `profiles.id` (antes `auth.users.id`) con `on delete cascade` → borrar un `profiles` row borra automáticamente su `students` row.
 - `llegadas_tarde.student_id` es nullable con `on delete set null` (antes `on delete cascade`) → al borrarse el `students` row, sus filas en `llegadas_tarde` **sobreviven** con `student_id = null`, conservando el snapshot de nombre/apellido/grado/división ya guardado.
 
-**`GestionEstudiantes.tsx`** (separada de `GestionUsuarios.tsx`): trae *todos* los `students` y todos los `profiles` con `role='estudiante'` (paginando con el mismo patrón robusto de `Planillas.tsx` — avanza por filas realmente recibidas, no por tamaño de lote pedido), arma un mapa `profile_id → email`, y agrupa client-side por `grado` (en el orden curricular de `GRADOS`, no alfabético) y dentro de cada uno por `division` (orden de `DIVISIONES`), con los alumnos de cada grupo ordenados alfabéticamente por apellido/nombre. Cada grupo muestra su propio contador; el total general sale de `students.length`. El buscador filtra en memoria por nombre/apellido/email — no vuelve a pegarle a la base. La edición de datos de un alumno (con la sincronización retroactiva a `llegadas_tarde`) vive acá, ya no en `GestionUsuarios.tsx`.
+**`GestionEstudiantes.tsx`** (separada de `GestionUsuarios.tsx`): trae *todos* los `students` y todos los `profiles` con `role='estudiante'` (paginando con el mismo patrón robusto de `Planillas.tsx` — avanza por filas realmente recibidas, no por tamaño de lote pedido), arma un mapa `profile_id → email`, y arma un rectángulo-acordeón independiente por cada combinación `grado`+`division` (orden curricular de `GRADOS`/`DIVISIONES`, no alfabético), con los alumnos de cada uno ordenados alfabéticamente por apellido/nombre. Colapsado muestra solo el nombre del grupo y su contador; solo puede haber **un** rectángulo expandido a la vez (`openKey` en estado — abrir uno cierra el anterior), animado con la técnica de `grid-template-rows: 0fr → 1fr` (no hace falta medir alturas en JS). El buscador es independiente del acordeón: con texto escrito, se oculta el acordeón entero y se muestra una lista plana con los resultados de todos los cursos/divisiones a la vez, filtrando en memoria por nombre/apellido/email. El contador total (`students.length`) siempre se muestra arriba, sin importar el estado del buscador. La edición de datos de un alumno (con la sincronización retroactiva a `llegadas_tarde`) vive acá, ya no en `GestionUsuarios.tsx`.
 
 **Limpieza al ascender un alumno a staff** (`008_cleanup_student_on_role_change.sql`): cambiar el `role` de un perfil de `estudiante` a `preceptor`/`admin` es un `UPDATE`, no dispara la cascada del punto anterior (que solo aplica a un `DELETE`). El trigger `after_profile_role_change_cleanup` (`AFTER UPDATE on profiles`, `security definer`) detecta ese cambio de rol y borra la fila de `students` correspondiente — mismo resultado que el reset manual (el historial en `llegadas_tarde` se conserva vía `SET NULL`), pero disparado automáticamente para que la ficha de alumno de alguien que pasó a ser staff no quede huérfana ni siga siendo escaneable/buscable como alumno.
 

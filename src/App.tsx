@@ -48,11 +48,11 @@ export default function App() {
               {/* Public */}
               <Route path="/login" element={<Login />} />
 
-              {/* Estudiante */}
+              {/* Estudiante (incluye usuario_nuevo: misma pantalla sirve para cargar los datos por primera vez) */}
               <Route
                 path="/estudiante"
                 element={
-                  <ProtectedRoute allowedRoles={['estudiante']}>
+                  <ProtectedRoute allowedRoles={['estudiante', 'usuario_nuevo']}>
                     <EstudianteDashboard />
                   </ProtectedRoute>
                 }

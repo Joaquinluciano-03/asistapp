@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 
 const ROLE_LABEL: Record<UserRole, string> = {
+  usuario_nuevo: 'Usuario nuevo',
   estudiante: 'Estudiante',
   preceptor: 'Preceptor',
   admin: 'Admin',
@@ -13,6 +14,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
 }
 
 const ROLE_BADGE: Record<UserRole, string> = {
+  usuario_nuevo: 'badge-neutral',
   estudiante: 'badge-primary',
   preceptor: 'badge-success',
   admin: 'badge-warning',
@@ -71,7 +73,13 @@ export function GestionUsuarios() {
     if (!myProfile) return []
     if (myProfile.role === 'preceptor') return []
     if (target.role === 'superadmin') return ['superadmin']
-    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') return ['estudiante', 'preceptor', 'admin']
+    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') {
+      const asignables: UserRole[] = ['estudiante', 'preceptor', 'admin']
+      // "usuario_nuevo" no es un rol que se asigne a mano — solo se muestra
+      // como opción si es el estado actual, para que el <select> tenga con
+      // qué mostrar el valor real hasta que se le asigne un rol de verdad.
+      return target.role === 'usuario_nuevo' ? ['usuario_nuevo', ...asignables] : asignables
+    }
     return []
   }
 
@@ -268,6 +276,7 @@ export function GestionUsuarios() {
             Referencia de roles
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
+            <div><span className="badge badge-neutral" style={{ marginRight: '0.5rem' }}>Usuario nuevo</span>Rol inicial automático al ingresar por primera vez. Sin permisos hasta que cargue sus datos (pasa a Estudiante solo) o un admin le asigne un rol.</div>
             <div><span className="badge badge-primary" style={{ marginRight: '0.5rem' }}>Estudiante</span>Puede completar sus datos y generar su QR personal.</div>
             <div><span className="badge badge-success" style={{ marginRight: '0.5rem' }}>Preceptor</span>Escanea QR y registra asistencias, ve planillas y gestiona datos de alumnos. No puede cambiar roles ni eliminar cuentas.</div>
             <div><span className="badge badge-warning" style={{ marginRight: '0.5rem' }}>Admin</span>Igual que preceptor, pero puede cambiar roles, eliminar usuarios individuales y eliminar todos los estudiantes.</div>

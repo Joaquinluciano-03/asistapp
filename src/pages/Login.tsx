@@ -11,7 +11,7 @@ export function Login() {
 
   // Redirect if already authenticated
   if (!loading && user && profile) {
-    if (profile.role === 'estudiante') return <Navigate to="/estudiante" replace />
+    if (profile.role === 'estudiante' || profile.role === 'usuario_nuevo') return <Navigate to="/estudiante" replace />
     return <Navigate to="/admin" replace />
   }
 

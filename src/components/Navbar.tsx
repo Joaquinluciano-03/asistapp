@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { HelpModal } from './HelpModal'
 
 const ROLE_LABEL: Record<string, string> = {
+  usuario_nuevo: 'Usuario nuevo',
   estudiante: 'Estudiante',
   preceptor: 'Preceptor',
   admin: 'Admin',
@@ -12,6 +13,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const ROLE_BADGE: Record<string, string> = {
+  usuario_nuevo: 'badge-neutral',
   estudiante: 'badge-primary',
   preceptor: 'badge-success',
   admin: 'badge-warning',
