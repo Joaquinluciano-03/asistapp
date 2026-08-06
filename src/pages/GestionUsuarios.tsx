@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabaseClient'
-import type { Profile, UserRole, Student } from '../lib/supabaseClient'
+import type { Profile, UserRole } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { GRADOS, DIVISIONES } from '../schemas/studentSchema'
 
 const ROLE_LABEL: Record<UserRole, string> = {
   estudiante: 'Estudiante',
@@ -25,26 +24,17 @@ interface ConfirmModal {
   target?: Profile
 }
 
-interface EditStudentModal {
-  profile: Profile
-  student: Student
-  form: { nombre: string; apellido: string; grado: string; division: string }
-}
-
 export function GestionUsuarios() {
   const { profile: myProfile } = useAuth()
   const { toastSuccess, toastError } = useToast()
 
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [students, setStudents] = useState<Record<string, Student>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [deletingAll, setDeletingAll] = useState(false)
   const [search, setSearch] = useState('')
   const [confirm, setConfirm] = useState<ConfirmModal | null>(null)
-  const [editModal, setEditModal] = useState<EditStudentModal | null>(null)
-  const [editSaving, setEditSaving] = useState(false)
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true)
@@ -53,19 +43,7 @@ export function GestionUsuarios() {
       .select('*')
       .order('created_at', { ascending: false })
     if (error) { toastError('Error al cargar usuarios') }
-    else {
-      const profs = (data ?? []) as Profile[]
-      setProfiles(profs)
-      const studentIds = profs.filter((p) => p.role === 'estudiante').map((p) => p.id)
-      if (studentIds.length > 0) {
-        const { data: sData } = await supabase.from('students').select('*').in('profile_id', studentIds)
-        if (sData) {
-          const map: Record<string, Student> = {}
-          for (const s of sData as Student[]) map[s.profile_id] = s
-          setStudents(map)
-        }
-      }
-    }
+    else { setProfiles((data ?? []) as Profile[]) }
     setLoading(false)
   }, [toastError])
 
@@ -121,59 +99,9 @@ export function GestionUsuarios() {
     else if (!data || data.length === 0) { toastError('No se pudo eliminar (sin permisos).') }
     else {
       setProfiles((prev) => prev.filter((p) => p.id !== target.id))
-      setStudents((prev) => { const next = { ...prev }; delete next[target.id]; return next })
       toastSuccess(`Usuario ${target.email} eliminado`)
     }
     setDeleting(null)
-  }
-
-  // ── Editar datos del alumno ────────────────────────────────────────
-  const handleOpenEdit = (profile: Profile) => {
-    const s = students[profile.id]
-    if (!s) return
-    setEditModal({ profile, student: s, form: { nombre: s.nombre, apellido: s.apellido, grado: s.grado, division: s.division } })
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editModal) return
-    setEditSaving(true)
-    const { form: f, student: s, profile } = editModal
-
-    // Actualizar students
-    const { data: studentData, error } = await supabase
-      .from('students')
-      .update({ ...f, updated_at: new Date().toISOString() })
-      .eq('id', s.id)
-      .select()
-    if (error) {
-      toastError(`Error: ${error.message}`)
-      setEditSaving(false)
-      return
-    }
-    if (!studentData || studentData.length === 0) {
-      toastError('No se pudo guardar (sin permisos).')
-      setEditSaving(false)
-      return
-    }
-
-    // Mantener consistencia — actualizar snapshots históricos en llegadas_tarde
-    const { error: llegadasError } = await supabase.from('llegadas_tarde').update({
-      nombre: f.nombre,
-      apellido: f.apellido,
-      grado: f.grado,
-      division: f.division,
-    }).eq('student_id', s.id)
-
-    if (llegadasError) {
-      toastError(`Datos guardados, pero falló la sincronización del historial: ${llegadasError.message}`)
-      setEditSaving(false)
-      return
-    }
-
-    setStudents((prev) => ({ ...prev, [profile.id]: { ...s, ...f } }))
-    toastSuccess(`Datos de ${profile.email} actualizados`)
-    setEditModal(null)
-    setEditSaving(false)
   }
 
   // ── Eliminar todos los estudiantes ────────────────────────────────
@@ -262,7 +190,6 @@ export function GestionUsuarios() {
                     <th>Rol</th>
                     <th>Registrado</th>
                     <th>Cambiar rol</th>
-                    <th style={{ textAlign: 'center' }}>Datos alumno</th>
                     <th style={{ textAlign: 'center' }}>Acción</th>
                   </tr>
                 </thead>
@@ -312,28 +239,6 @@ export function GestionUsuarios() {
                           )}
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                            {p.role === 'estudiante' ? (
-                              <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
-                                {students[p.id] ? (
-                                  <>
-                                    <button
-                                      id={`btn-editar-datos-${p.id}`}
-                                      onClick={() => handleOpenEdit(p)}
-                                      disabled={isDeleting || isSaving}
-                                      className="btn btn-secondary btn-sm"
-                                      title="Editar datos del alumno"
-                                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem' }}
-                                    >✏️</button>
-                                  </>
-                                ) : (
-                                  <span style={{ fontSize: '0.75rem', color: '#475569' }}>Sin datos</span>
-                                )}
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '0.8rem', color: '#334155' }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
                           {modifiable ? (
                             <button
                               id={`btn-eliminar-${p.id}`}
@@ -364,7 +269,7 @@ export function GestionUsuarios() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
             <div><span className="badge badge-primary" style={{ marginRight: '0.5rem' }}>Estudiante</span>Puede completar sus datos y generar su QR personal.</div>
-            <div><span className="badge badge-success" style={{ marginRight: '0.5rem' }}>Preceptor</span>Escanea QR y registra asistencias, ve planillas, exporta a Excel y puede editar datos de alumnos. No puede cambiar roles ni eliminar cuentas.</div>
+            <div><span className="badge badge-success" style={{ marginRight: '0.5rem' }}>Preceptor</span>Escanea QR y registra asistencias, ve planillas y gestiona datos de alumnos. No puede cambiar roles ni eliminar cuentas.</div>
             <div><span className="badge badge-warning" style={{ marginRight: '0.5rem' }}>Admin</span>Igual que preceptor, pero puede cambiar roles, eliminar usuarios individuales y eliminar todos los estudiantes.</div>
             <div><span className="badge badge-purple" style={{ marginRight: '0.5rem' }}>Superadmin</span>Control total. No puede ser degradado por un admin.</div>
           </div>
@@ -405,53 +310,6 @@ export function GestionUsuarios() {
                 Sí, eliminar
               </button>
               <button id="btn-cancelar-eliminacion" onClick={() => setConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal editar datos del alumno ── */}
-      {editModal && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditModal(null) }}
-        >
-          <div className="modal-card animate-fade-in" style={{ maxWidth: 440, padding: '2rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#f1f5f9', marginBottom: '0.4rem' }}>✏️ Editar datos del alumno</h2>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>{editModal.profile.email}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Nombre</label>
-                  <input className="input-base" value={editModal.form.nombre} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, nombre: e.target.value } } : null)} maxLength={60} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Apellido</label>
-                  <input className="input-base" value={editModal.form.apellido} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, apellido: e.target.value } } : null)} maxLength={60} />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>Año</label>
-                  <select className="input-base" value={editModal.form.grado} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, grado: e.target.value } } : null)}>
-                    <option value="">Seleccioná...</option>
-                    {GRADOS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '0.35rem' }}>División</label>
-                  <select className="input-base" value={editModal.form.division} onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, division: e.target.value } } : null)}>
-                    <option value="">Seleccioná...</option>
-                    {DIVISIONES.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
-              <button id="btn-guardar-edicion-alumno" onClick={handleSaveEdit} disabled={editSaving} className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }}>
-                {editSaving ? <><div className="spinner" /> Guardando...</> : '💾 Guardar cambios'}
-              </button>
-              <button onClick={() => setEditModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
             </div>
           </div>
         </div>

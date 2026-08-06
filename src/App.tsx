@@ -11,6 +11,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ 
 const AdminScanner = lazy(() => import('./pages/AdminScanner').then(m => ({ default: m.AdminScanner })))
 const Planillas = lazy(() => import('./pages/Planillas').then(m => ({ default: m.Planillas })))
 const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios').then(m => ({ default: m.GestionUsuarios })))
+const GestionEstudiantes = lazy(() => import('./pages/GestionEstudiantes').then(m => ({ default: m.GestionEstudiantes })))
 
 const STAFF_ROLES = ['preceptor', 'admin', 'superadmin'] as const
 
@@ -87,6 +88,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <GestionUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/alumnos"
+                element={
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
+                    <GestionEstudiantes />
                   </ProtectedRoute>
                 }
               />

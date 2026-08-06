@@ -64,7 +64,8 @@ asistapp/
     │   ├── EstudianteDashboard.tsx
     │   ├── AdminDashboard.tsx
     │   ├── AdminScanner.tsx        # flujo de escaneo/registro, incluye buscador manual (ver §6-7)
-    │   ├── GestionUsuarios.tsx     # alta/baja/roles de usuarios
+    │   ├── GestionUsuarios.tsx     # roles/borrado de usuarios (ver §7)
+    │   ├── GestionEstudiantes.tsx  # listado/edición de alumnos, agrupado por curso y división (ver §7)
     │   └── Planillas.tsx           # exportación de asistencia
     ├── schemas/
     │   └── studentSchema.ts        # validación zod
@@ -94,6 +95,7 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 | `/admin` | `AdminDashboard` | staff |
 | `/admin/escanear` | `AdminScanner` | staff |
 | `/admin/planillas` | `Planillas` | staff |
+| `/admin/alumnos` | `GestionEstudiantes` | staff |
 | `/admin/usuarios` | `GestionUsuarios` | staff |
 | `/`, `*` | redirect | → `/login` |
 
@@ -155,12 +157,14 @@ Validación con zod en `src/schemas/studentSchema.ts` (`grado` limitado a 1°–
 - `turno` (mañana/tarde) calculado en el cliente según huso horario argentino (`src/utils/turno.ts`, umbral ≥13hs = tarde), reflejando lo que hace un trigger en la DB.
 - Doble guardia anti-duplicado: chequeo previo por `student_id + fecha + turno`, y constraint `UNIQUE` en la DB como resguardo final (error Postgres `23505` capturado y mostrado como toast amigable).
 - No hay un campo de estado persistido en el registro; los "estados intermedios" son puramente de UI, no se guardan en la DB.
-- **Edición retroactiva del historial (decisión de producto confirmada):** al editar nombre/grado/división de un alumno en `GestionUsuarios.tsx`, se reescriben también todos sus registros históricos en `llegadas_tarde` con los datos nuevos. Es intencional — el negocio prefiere que el historial siempre muestre los datos actuales del alumno, no una foto del momento.
+- **Edición retroactiva del historial (decisión de producto confirmada):** al editar nombre/grado/división de un alumno en `GestionEstudiantes.tsx`, se reescriben también todos sus registros históricos en `llegadas_tarde` con los datos nuevos. Es intencional — el negocio prefiere que el historial siempre muestre los datos actuales del alumno, no una foto del momento.
 - **Nota histórica:** la función `reset_student` fue eliminada por completo del código (commit `19b844e`) — no reintroducirla salvo pedido explícito.
 
 **Borrado = reset sin perder historial** (`004_fix_rls_and_reset.sql`):
 - `students.profile_id` ahora referencia `profiles.id` (antes `auth.users.id`) con `on delete cascade` → borrar un `profiles` row borra automáticamente su `students` row.
 - `llegadas_tarde.student_id` es nullable con `on delete set null` (antes `on delete cascade`) → al borrarse el `students` row, sus filas en `llegadas_tarde` **sobreviven** con `student_id = null`, conservando el snapshot de nombre/apellido/grado/división ya guardado.
+
+**`GestionEstudiantes.tsx`** (separada de `GestionUsuarios.tsx`): trae *todos* los `students` y todos los `profiles` con `role='estudiante'` (paginando con el mismo patrón robusto de `Planillas.tsx` — avanza por filas realmente recibidas, no por tamaño de lote pedido), arma un mapa `profile_id → email`, y agrupa client-side por `grado` (en el orden curricular de `GRADOS`, no alfabético) y dentro de cada uno por `division` (orden de `DIVISIONES`), con los alumnos de cada grupo ordenados alfabéticamente por apellido/nombre. Cada grupo muestra su propio contador; el total general sale de `students.length`. El buscador filtra en memoria por nombre/apellido/email — no vuelve a pegarle a la base. La edición de datos de un alumno (con la sincronización retroactiva a `llegadas_tarde`) vive acá, ya no en `GestionUsuarios.tsx`.
 
 **Limpieza al ascender un alumno a staff** (`008_cleanup_student_on_role_change.sql`): cambiar el `role` de un perfil de `estudiante` a `preceptor`/`admin` es un `UPDATE`, no dispara la cascada del punto anterior (que solo aplica a un `DELETE`). El trigger `after_profile_role_change_cleanup` (`AFTER UPDATE on profiles`, `security definer`) detecta ese cambio de rol y borra la fila de `students` correspondiente — mismo resultado que el reset manual (el historial en `llegadas_tarde` se conserva vía `SET NULL`), pero disparado automáticamente para que la ficha de alumno de alguien que pasó a ser staff no quede huérfana ni siga siendo escaneable/buscable como alumno.
 

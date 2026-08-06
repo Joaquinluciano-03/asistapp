@@ -70,6 +70,7 @@ export function Navbar() {
     { to: '/admin', label: '🏠 Inicio', exact: true },
     { to: '/admin/escanear', label: '📷 Escanear QR' },
     { to: '/admin/planillas', label: '📋 Planillas' },
+    { to: '/admin/alumnos', label: '🎓 Alumnos' },
     { to: '/admin/usuarios', label: '👥 Usuarios' },
   ]
 

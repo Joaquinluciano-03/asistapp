@@ -46,6 +46,18 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
       ),
     },
     {
+      icon: '🎓',
+      title: 'Gestión de estudiantes',
+      content: (
+        <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+          <li>Ingresá a <strong>Alumnos</strong> desde el menú.</li>
+          <li>Vas a ver el total de alumnos registrados, agrupados por año y división, cada grupo con su propio contador.</li>
+          <li>Usá el buscador para encontrar a un alumno por nombre, apellido o email — filtra la lista en el momento.</li>
+          <li>Para <strong>editar datos de un alumno</strong> (nombre, apellido, año, división): presioná el botón ✏️ en su fila. El historial de llegadas tarde de ese alumno se actualiza automáticamente con los datos nuevos.</li>
+        </ol>
+      ),
+    },
+    {
       icon: '👥',
       title: 'Gestión de usuarios',
       content: (
@@ -55,9 +67,11 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
             {!isPreceptor && (
               <li>Podés cambiar el rol de un usuario entre <strong>Estudiante, Preceptor o Admin</strong>.</li>
             )}
-            <li>Para <strong>editar datos de un alumno</strong> (nombre, apellido, año, división): presioná el botón ✏️ en la fila. El historial de llegadas tarde de ese alumno se actualiza automáticamente con los datos nuevos.</li>
             {!isPreceptor && (
               <li>Para <strong>eliminar</strong> un usuario o alumno: usá el botón 🗑️. La cuenta se desconecta del sistema — si esa persona vuelve a loguearse, va a tener que cargar sus datos de nuevo (o se le puede asignar un rol). Su historial de llegadas tarde <strong>no se borra</strong>, queda intacto.</li>
+            )}
+            {isPreceptor && (
+              <li>Como preceptor podés ver la lista de usuarios, pero cambiar roles y eliminar cuentas son acciones reservadas a admin/superadmin. Para editar datos de alumnos, andá a <strong>Alumnos</strong>.</li>
             )}
           </ol>
         </>
