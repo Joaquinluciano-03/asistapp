@@ -39,7 +39,7 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
         <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
           <li>Ingresá a <strong>Planillas</strong> desde el menú.</li>
           <li>Filtrá por rango de fechas, turno (mañana/tarde), año o división usando los controles.</li>
-          <li>La tabla muestra cada llegada tarde con fecha, hora, turno, método (QR o manual) y quién la registró.</li>
+          <li>La tabla muestra cada llegada tarde con fecha, hora, turno, método (QR, manual o retroactivo) y quién la registró.</li>
           <li>La tabla muestra los primeros 500 registros; si hay más, aparece el botón <strong>"Cargar más"</strong> abajo para seguir viendo.</li>
           <li>Usá <strong>Exportar a Excel</strong> para descargar el informe del período filtrado — el archivo siempre incluye <strong>todos</strong> los registros que matchean el filtro, aunque no los hayas cargado todos en pantalla. Ningún dato queda afuera.</li>
         </ol>
@@ -173,6 +173,7 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
   const isAdmin = role === 'admin' || role === 'superadmin' || role === 'preceptor'
   const sections = isAdmin ? buildStaffSections(role) : studentSections
   const title = isAdmin ? '📖 Manual de uso (Staff)' : '📖 Manual del Alumno'
+  const canDownloadPdf = role === 'admin' || role === 'superadmin'
 
   return (
     <div
@@ -197,6 +198,20 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
 
         {/* Content — scrollable */}
         <div style={{ overflowY: 'auto', padding: '1rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {canDownloadPdf && (
+            <a
+              href="/Manual_Administrador_AsistApp.pdf"
+              download
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'rgba(13,148,136,0.1)', border: '1px solid rgba(45,212,191,0.3)', textDecoration: 'none', marginBottom: '0.25rem' }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>📄</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#5eead4' }}>Descargar manual completo (PDF)</div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.1rem' }}>Guía detallada para administrar el sistema, con capturas y diagramas</div>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: '#5eead4', flexShrink: 0 }}>⬇️</span>
+            </a>
+          )}
           {sections.map((sec, idx) => (
             <div
               key={idx}
