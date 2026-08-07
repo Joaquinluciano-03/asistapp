@@ -89,7 +89,7 @@ BrowserRouter
          └─ Suspense (PageLoader) — todas las páginas son React.lazy
 ```
 
-Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
+Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`, `USER_MANAGEMENT_ROLES = ['admin', 'superadmin']`):
 
 | Ruta | Página | Roles permitidos |
 |---|---|---|
@@ -99,10 +99,12 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 | `/admin/escanear` | `AdminScanner` | staff |
 | `/admin/planillas` | `Planillas` | staff |
 | `/admin/alumnos` | `GestionEstudiantes` | staff |
-| `/admin/usuarios` | `GestionUsuarios` | staff |
+| `/admin/usuarios` | `GestionUsuarios` | **solo `admin`/`superadmin`** (`preceptor` no gestiona usuarios, ver más abajo) |
 | `/`, `*` | redirect | → `/login` |
 
 `ProtectedRoute.tsx` lee `useAuth()`: sin sesión → `/login`; rol no permitido → redirige a `/estudiante` o `/admin` según corresponda.
+
+**`/admin/usuarios` restringida a `admin`/`superadmin`:** `preceptor` no tiene ninguna acción disponible en `GestionUsuarios.tsx` (no puede cambiar roles ni eliminar cuentas, ver más abajo), así que directamente no ve la sección — ni la ruta (`App.tsx`, `ProtectedRoute allowedRoles={[...USER_MANAGEMENT_ROLES]}`) ni el link "👥 Usuarios" en `Navbar.tsx` (el array `adminLinks` ahora tiene un campo opcional `roles` por ítem, filtrado con `.filter((link) => !link.roles || link.roles.includes(profile.role))` antes de renderizar tanto el nav desktop como el dropdown mobile). El manual (`HelpModal.tsx`) refleja esto: `buildStaffSections()` omite por completo la sección "Gestión de usuarios" cuando `role === 'preceptor'` (antes solo ocultaba parte del contenido, dejando la sección visible igual). La gestión de alumnos por parte de `preceptor` sigue intacta en `/admin/alumnos`.
 
 ## 5. Autenticación y roles
 
@@ -117,16 +119,17 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`):
 
 **Nota histórica:** se probó agregar un quinto rol `usuario_nuevo` (rol inicial automático antes de decidir si alguien es alumno o staff, migraciones 009/010) y se revirtió a pedido (`011_revert_usuario_nuevo_role.sql`) — todo login nuevo vuelve a entrar directo como `estudiante`. El enum de Postgres sigue teniendo el valor `usuario_nuevo` definido (no se puede borrar un valor de un enum), pero ya no lo asigna nadie. `EstudianteDashboard.tsx` conserva un aviso (🚨, arriba del formulario) pidiéndole al personal del colegio que no cargue el formulario de alumno y hable con un administrador — sigue siendo relevante porque el default de `estudiante` para logins nuevos es el mismo de siempre.
 
-**Restricción de acciones destructivas al rol `preceptor`** (`src/pages/GestionUsuarios.tsx`, commit `555774f`):
+**`GestionUsuarios.tsx` es ahora territorio exclusivo de `admin`/`superadmin`** — `preceptor` ni siquiera llega a la página (ver bloque de rutas más arriba), así que los chequeos internos de permisos ya no necesitan contemplar ese rol:
 ```ts
 const canModify = (target) => {
-  if (myProfile.role === 'preceptor') return false
   if (target.id === myProfile.id) return false
   if (target.role === 'superadmin') return false
   return true
 }
 ```
-Respaldo a nivel de base de datos vía RLS (`get_role()`), incluyendo desde `004_fix_rls_and_reset.sql`: `preceptor` puede leer/insertar `llegadas_tarde`, leer/editar `students`, pero no puede cambiar roles ni borrar (`profiles`/`students` DELETE solo para `admin`/`superadmin`). Un `admin` puede ascender a otro usuario a `preceptor` o `admin` (no solo `superadmin` puede — decisión de producto confirmada, cualquier admin puede crear pares admin).
+La lista se ordena por jerarquía de rol (de mayor a menor: `superadmin` > `admin` > `preceptor` > `estudiante`) y, dentro de cada rol, alfabéticamente por email (`ROLE_RANK` + `sortProfiles()`, re-aplicado también tras un cambio de rol exitoso). `fetchProfiles()` además pagina con el mismo patrón robusto de `Planillas.tsx`/`GestionEstudiantes.tsx` (avanza por filas realmente recibidas, se detiene al alcanzar el `count` exacto) en vez del `.select('*')` sin límite que tenía antes.
+
+Respaldo a nivel de base de datos vía RLS (`get_role()`), incluyendo desde `004_fix_rls_and_reset.sql`: `preceptor` puede leer/insertar `llegadas_tarde`, leer/editar `students`, pero no puede cambiar roles ni borrar (`profiles`/`students` DELETE solo para `admin`/`superadmin`) — la restricción de UI en `GestionUsuarios.tsx` es una comodidad, la autorización real vive en RLS. Un `admin` puede ascender a otro usuario a `preceptor` o `admin` (no solo `superadmin` puede — decisión de producto confirmada, cualquier admin puede crear pares admin).
 
 **Borrado = reset, no baja permanente.** "Eliminar usuario"/"Eliminar todos los estudiantes" en `GestionUsuarios.tsx` borran la fila de `profiles` (y en cascada la de `students`, ver §7), pero **no tocan `auth.users`** — la persona puede volver a loguearse normalmente y, gracias a `ensure_own_profile()`, se le recrea un perfil `estudiante` en blanco para que vuelva a cargar sus datos o sea reasignada a un rol por un admin. El historial de `llegadas_tarde` de un alumno reseteado **se conserva** (ver §7).
 

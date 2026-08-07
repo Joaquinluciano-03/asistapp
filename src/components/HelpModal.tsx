@@ -12,12 +12,12 @@ interface Section {
 }
 
 // ── Secciones para STAFF (admin / superadmin / preceptor) ─────────────
-// El contenido de "Gestión de usuarios" depende del rol: preceptor puede
-// ver la lista y editar alumnos, pero no cambiar roles ni eliminar cuentas.
+// "Gestión de usuarios" es exclusiva de admin/superadmin: preceptor no
+// tiene acceso a esa sección (gestiona alumnos desde "Alumnos").
 function buildStaffSections(role: HelpModalProps['role']): Section[] {
   const isPreceptor = role === 'preceptor'
 
-  return [
+  const sections: Section[] = [
     {
       icon: '📷',
       title: 'Escanear QR',
@@ -57,27 +57,24 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
         </ol>
       ),
     },
-    {
+  ]
+
+  if (!isPreceptor) {
+    sections.push({
       icon: '👥',
       title: 'Gestión de usuarios',
       content: (
-        <>
-          <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
-            <li>Ingresá a <strong>Usuarios</strong> desde el menú.</li>
-            {!isPreceptor && (
-              <li>Podés cambiar el rol de un usuario entre <strong>Estudiante, Preceptor o Admin</strong>.</li>
-            )}
-            {!isPreceptor && (
-              <li>Para <strong>eliminar</strong> un usuario o alumno: usá el botón 🗑️. La cuenta se desconecta del sistema — si esa persona vuelve a loguearse, va a tener que cargar sus datos de nuevo (o se le puede asignar un rol). Su historial de llegadas tarde <strong>no se borra</strong>, queda intacto.</li>
-            )}
-            {isPreceptor && (
-              <li>Como preceptor podés ver la lista de usuarios, pero cambiar roles y eliminar cuentas son acciones reservadas a admin/superadmin. Para editar datos de alumnos, andá a <strong>Alumnos</strong>.</li>
-            )}
-          </ol>
-        </>
+        <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+          <li>Ingresá a <strong>Usuarios</strong> desde el menú.</li>
+          <li>Los usuarios aparecen ordenados por rol (de mayor a menor jerarquía) y alfabéticamente dentro de cada rol.</li>
+          <li>Podés cambiar el rol de un usuario entre <strong>Estudiante, Preceptor o Admin</strong>.</li>
+          <li>Para <strong>eliminar</strong> un usuario o alumno: usá el botón 🗑️. La cuenta se desconecta del sistema — si esa persona vuelve a loguearse, va a tener que cargar sus datos de nuevo (o se le puede asignar un rol). Su historial de llegadas tarde <strong>no se borra</strong>, queda intacto.</li>
+        </ol>
       ),
-    },
-  ]
+    })
+  }
+
+  return sections
 }
 
 // ── Secciones para ESTUDIANTE ─────────────────────────────────────────

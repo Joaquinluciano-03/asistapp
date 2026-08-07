@@ -14,6 +14,7 @@ const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios').then(m => (
 const GestionEstudiantes = lazy(() => import('./pages/GestionEstudiantes').then(m => ({ default: m.GestionEstudiantes })))
 
 const STAFF_ROLES = ['preceptor', 'admin', 'superadmin'] as const
+const USER_MANAGEMENT_ROLES = ['admin', 'superadmin'] as const
 
 // Spinner de carga mientras se descarga el chunk de la página
 function PageLoader() {
@@ -83,10 +84,11 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Usuarios — solo admin/superadmin, preceptor no tiene nada que hacer acá (gestiona alumnos en /admin/alumnos) */}
               <Route
                 path="/admin/usuarios"
                 element={
-                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
+                  <ProtectedRoute allowedRoles={[...USER_MANAGEMENT_ROLES]}>
                     <GestionUsuarios />
                   </ProtectedRoute>
                 }

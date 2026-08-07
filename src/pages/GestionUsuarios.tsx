@@ -19,6 +19,22 @@ const ROLE_BADGE: Record<UserRole, string> = {
   superadmin: 'badge-purple',
 }
 
+// Mayor jerarquía primero; dentro del mismo rol, alfabético por email
+const ROLE_RANK: Record<UserRole, number> = {
+  superadmin: 0,
+  admin: 1,
+  preceptor: 2,
+  estudiante: 3,
+}
+
+const sortProfiles = (list: Profile[]): Profile[] =>
+  [...list].sort((a, b) => {
+    const diff = ROLE_RANK[a.role] - ROLE_RANK[b.role]
+    return diff !== 0 ? diff : a.email.localeCompare(b.email, 'es')
+  })
+
+const FETCH_BATCH_SIZE = 500
+
 interface ConfirmModal {
   type: 'delete_user' | 'delete_all_students'
   target?: Profile
@@ -38,12 +54,24 @@ export function GestionUsuarios() {
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) { toastError('Error al cargar usuarios') }
-    else { setProfiles((data ?? []) as Profile[]) }
+    const all: Profile[] = []
+    let offset = 0
+    let total = Infinity
+    let failed = false
+    while (all.length < total) {
+      const { data, error, count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + FETCH_BATCH_SIZE - 1)
+      if (error) { toastError('Error al cargar usuarios'); failed = true; break }
+      const rows = (data ?? []) as Profile[]
+      all.push(...rows)
+      total = count ?? all.length
+      offset += rows.length
+      if (rows.length === 0) break
+    }
+    if (!failed) setProfiles(sortProfiles(all))
     setLoading(false)
   }, [toastError])
 
@@ -57,11 +85,9 @@ export function GestionUsuarios() {
 
   const studentCount = useMemo(() => profiles.filter((p) => p.role === 'estudiante').length, [profiles])
 
-  // ── Permisos ──────────────────────────────────────────────────────
+  // ── Permisos (esta página ya es solo admin/superadmin — ver ProtectedRoute en App.tsx) ──
   const canModify = (target: Profile): boolean => {
     if (!myProfile) return false
-    // Preceptor no puede cambiar roles ni eliminar usuarios
-    if (myProfile.role === 'preceptor') return false
     if (target.id === myProfile.id) return false
     if (target.role === 'superadmin') return false
     return true
@@ -69,10 +95,8 @@ export function GestionUsuarios() {
 
   const allowedRoles = (target: Profile): UserRole[] => {
     if (!myProfile) return []
-    if (myProfile.role === 'preceptor') return []
     if (target.role === 'superadmin') return ['superadmin']
-    if (myProfile.role === 'superadmin' || myProfile.role === 'admin') return ['estudiante', 'preceptor', 'admin']
-    return []
+    return ['estudiante', 'preceptor', 'admin']
   }
 
   // ── Cambiar rol ───────────────────────────────────────────────────
@@ -84,7 +108,7 @@ export function GestionUsuarios() {
     if (error) { toastError(`Error al actualizar: ${error.message}`) }
     else if (!data || data.length === 0) { toastError('No se pudo actualizar el rol (sin permisos).') }
     else {
-      setProfiles((prev) => prev.map((p) => p.id === target.id ? { ...p, role: newRole } : p))
+      setProfiles((prev) => sortProfiles(prev.map((p) => p.id === target.id ? { ...p, role: newRole } : p)))
       toastSuccess(`Rol de ${target.email} → "${ROLE_LABEL[newRole]}"`)
     }
     setSaving(null)
@@ -130,7 +154,7 @@ export function GestionUsuarios() {
               {profiles.length} usuario{profiles.length !== 1 ? 's' : ''} registrado{profiles.length !== 1 ? 's' : ''} — {studentCount} estudiante{studentCount !== 1 ? 's' : ''}
             </p>
           </div>
-          {studentCount > 0 && myProfile?.role !== 'preceptor' && (
+          {studentCount > 0 && (
             <button
               id="btn-eliminar-todos-estudiantes"
               onClick={() => setConfirm({ type: 'delete_all_students' })}

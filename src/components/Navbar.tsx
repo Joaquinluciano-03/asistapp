@@ -66,13 +66,15 @@ export function Navbar() {
 
   const isAdmin = profile.role === 'admin' || profile.role === 'superadmin' || profile.role === 'preceptor'
 
-  const adminLinks = [
+  interface AdminLink { to: string; label: string; exact?: boolean; roles?: string[] }
+  const adminLinks: AdminLink[] = [
     { to: '/admin', label: '🏠 Inicio', exact: true },
     { to: '/admin/escanear', label: '📷 Escanear QR' },
     { to: '/admin/planillas', label: '📋 Planillas' },
     { to: '/admin/alumnos', label: '🎓 Alumnos' },
-    { to: '/admin/usuarios', label: '👥 Usuarios' },
-  ]
+    // Usuarios: preceptor no tiene nada que hacer ahí (gestiona alumnos en /admin/alumnos)
+    { to: '/admin/usuarios', label: '👥 Usuarios', roles: ['admin', 'superadmin'] },
+  ].filter((link) => !link.roles || link.roles.includes(profile.role))
 
   const isActive = (to: string, exact?: boolean) => {
     if (exact) return location.pathname === to
