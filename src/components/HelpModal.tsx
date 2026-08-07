@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 interface HelpModalProps {
-  role: 'admin' | 'superadmin' | 'estudiante' | 'preceptor' | 'usuario_nuevo'
+  role: 'admin' | 'superadmin' | 'estudiante' | 'preceptor'
   onClose: () => void
 }
 

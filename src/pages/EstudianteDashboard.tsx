@@ -10,8 +10,7 @@ import { Navbar } from '../components/Navbar'
 import { HelpModal } from '../components/HelpModal'
 
 export function EstudianteDashboard() {
-  const { user, profile, refreshProfile } = useAuth()
-  const isUsuarioNuevo = profile?.role === 'usuario_nuevo'
+  const { user, profile } = useAuth()
   const { toastSuccess, toastError } = useToast()
 
   const [student, setStudent] = useState<Student | null>(null)
@@ -103,10 +102,6 @@ export function EstudianteDashboard() {
         .single()
       if (error) throw error
       setStudent(data as Student)
-      // Si era "usuario_nuevo", el trigger de la DB ya lo ascendió a
-      // "estudiante" en el mismo insert — hay que refrescar el perfil en
-      // memoria para que el resto de la app (Navbar, ProtectedRoute) lo vea.
-      if (isUsuarioNuevo) await refreshProfile()
       toastSuccess('¡Datos guardados! Tu QR fue generado.')
       setShowQR(true)
     } catch (err: unknown) {
@@ -138,11 +133,9 @@ export function EstudianteDashboard() {
       <Navbar />
       <div className="page-container" style={{ maxWidth: 800 }}>
         <div className="page-header">
-          <h1 className="page-title">{isUsuarioNuevo && !student ? '👋 ¡Bienvenido/a!' : 'Mi QR de Asistencia'}</h1>
+          <h1 className="page-title">Mi QR de Asistencia</h1>
           <p className="page-subtitle">
-            {isUsuarioNuevo && !student
-              ? 'Si sos alumno/a, completá tus datos acá abajo para registrarte y generar tu código QR.'
-              : 'Completá tus datos para generar tu código QR personal.'}
+            Completá tus datos para generar tu código QR personal.
           </p>
         </div>
 

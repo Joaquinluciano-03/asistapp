@@ -454,11 +454,6 @@ select:focus-visible,
   color: #fb7185;
   border: 1px solid rgba(251, 113, 133, 0.35);
 }
-.badge-neutral {
-  background: rgba(100, 116, 139, 0.18);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-}
 
 /* Table */
 .data-table {
