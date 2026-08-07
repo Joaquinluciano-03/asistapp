@@ -34,6 +34,7 @@ const sortProfiles = (list: Profile[]): Profile[] =>
   })
 
 const FETCH_BATCH_SIZE = 500
+const DELETE_ALL_CONFIRM_WORD = 'ELIMINAR TODOS'
 
 interface ConfirmModal {
   type: 'delete_user' | 'delete_all_students'
@@ -51,6 +52,9 @@ export function GestionUsuarios() {
   const [deletingAll, setDeletingAll] = useState(false)
   const [search, setSearch] = useState('')
   const [confirm, setConfirm] = useState<ConfirmModal | null>(null)
+  const [confirmText, setConfirmText] = useState('')
+
+  const closeConfirm = () => { setConfirm(null); setConfirmText('') }
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true)
@@ -116,7 +120,7 @@ export function GestionUsuarios() {
 
   // ── Eliminar un usuario ───────────────────────────────────────────
   const handleDeleteUser = async (target: Profile) => {
-    setConfirm(null)
+    closeConfirm()
     setDeleting(target.id)
     const { data, error } = await supabase.from('profiles').delete().eq('id', target.id).select()
     if (error) { toastError(`Error al eliminar: ${error.message}`) }
@@ -130,7 +134,8 @@ export function GestionUsuarios() {
 
   // ── Eliminar todos los estudiantes ────────────────────────────────
   const handleDeleteAllStudents = async () => {
-    setConfirm(null)
+    if (confirmText.trim().toUpperCase() !== DELETE_ALL_CONFIRM_WORD) return
+    closeConfirm()
     setDeletingAll(true)
     const { data, error } = await supabase.from('profiles').delete().eq('role', 'estudiante').select()
     if (error) { toastError(`Error al eliminar estudiantes: ${error.message}`) }
@@ -157,7 +162,7 @@ export function GestionUsuarios() {
           {studentCount > 0 && (
             <button
               id="btn-eliminar-todos-estudiantes"
-              onClick={() => setConfirm({ type: 'delete_all_students' })}
+              onClick={() => { setConfirm({ type: 'delete_all_students' }); setConfirmText('') }}
               disabled={deletingAll || loading}
               className="btn btn-danger btn-sm"
               style={{ alignSelf: 'flex-start', whiteSpace: 'nowrap' }}
@@ -266,7 +271,7 @@ export function GestionUsuarios() {
                           {modifiable ? (
                             <button
                               id={`btn-eliminar-${p.id}`}
-                              onClick={() => setConfirm({ type: 'delete_user', target: p })}
+                              onClick={() => { setConfirm({ type: 'delete_user', target: p }); setConfirmText('') }}
                               disabled={isDeleting || isSaving}
                               className="btn btn-danger btn-sm"
                               title={`Eliminar ${p.email}`}
@@ -304,7 +309,7 @@ export function GestionUsuarios() {
       {confirm && (
         <div
           className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setConfirm(null) }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeConfirm() }}
         >
           <div className="modal-card animate-fade-in" style={{ maxWidth: 420, padding: '2rem', borderColor: 'rgba(239,68,68,0.35)' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '1rem' }}>
@@ -315,12 +320,30 @@ export function GestionUsuarios() {
                 ? `Eliminar ${studentCount} estudiante${studentCount !== 1 ? 's' : ''}`
                 : 'Eliminar usuario'}
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6, marginBottom: confirm.type === 'delete_all_students' ? '1rem' : '1.5rem' }}>
               {confirm.type === 'delete_all_students'
                 ? <>Elimina <strong style={{ color: '#f87171' }}>permanentemente</strong> todos los estudiantes y sus datos. <strong>No se puede deshacer</strong>.</>
                 : <>Se eliminará permanentemente a <strong style={{ color: '#f1f5f9' }}>{confirm.target?.email}</strong> y todos sus datos. <strong>No se puede deshacer</strong>.</>
               }
             </p>
+            {confirm.type === 'delete_all_students' && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="confirmar-texto-eliminar-todos" style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.5rem', textAlign: 'center' }}>
+                  Escribí <strong style={{ color: '#f87171' }}>{DELETE_ALL_CONFIRM_WORD}</strong> para confirmar
+                </label>
+                <input
+                  id="confirmar-texto-eliminar-todos"
+                  type="text"
+                  className="input-base"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  autoComplete="off"
+                  autoFocus
+                  placeholder={DELETE_ALL_CONFIRM_WORD}
+                  style={{ textAlign: 'center' }}
+                />
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
                 id="btn-confirmar-eliminacion"
@@ -328,12 +351,13 @@ export function GestionUsuarios() {
                   if (confirm.type === 'delete_all_students') handleDeleteAllStudents()
                   else if (confirm.target) handleDeleteUser(confirm.target)
                 }}
+                disabled={confirm.type === 'delete_all_students' && confirmText.trim().toUpperCase() !== DELETE_ALL_CONFIRM_WORD}
                 className="btn btn-danger"
                 style={{ flex: 1, fontWeight: 700 }}
               >
                 Sí, eliminar
               </button>
-              <button id="btn-cancelar-eliminacion" onClick={() => setConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+              <button id="btn-cancelar-eliminacion" onClick={closeConfirm} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
             </div>
           </div>
         </div>
