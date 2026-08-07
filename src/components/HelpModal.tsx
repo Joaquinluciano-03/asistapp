@@ -173,7 +173,13 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
   const isAdmin = role === 'admin' || role === 'superadmin' || role === 'preceptor'
   const sections = isAdmin ? buildStaffSections(role) : studentSections
   const title = isAdmin ? '📖 Manual de uso (Staff)' : '📖 Manual del Alumno'
-  const canDownloadPdf = role === 'admin' || role === 'superadmin'
+
+  const pdfManual =
+    role === 'admin' || role === 'superadmin'
+      ? { href: '/Manual_Administrador_AsistApp.pdf', label: 'Descargar manual completo (PDF)' }
+      : role === 'preceptor'
+      ? { href: '/Manual_Preceptor_AsistApp.pdf', label: 'Descargar manual del preceptor (PDF)' }
+      : null
 
   return (
     <div
@@ -198,16 +204,16 @@ export function HelpModal({ role, onClose }: HelpModalProps) {
 
         {/* Content — scrollable */}
         <div style={{ overflowY: 'auto', padding: '1rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {canDownloadPdf && (
+          {pdfManual && (
             <a
-              href="/Manual_Administrador_AsistApp.pdf"
+              href={pdfManual.href}
               download
               style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'rgba(13,148,136,0.1)', border: '1px solid rgba(45,212,191,0.3)', textDecoration: 'none', marginBottom: '0.25rem' }}
             >
               <span style={{ fontSize: '1.3rem' }}>📄</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#5eead4' }}>Descargar manual completo (PDF)</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.1rem' }}>Guía detallada para administrar el sistema, con capturas y diagramas</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#5eead4' }}>{pdfManual.label}</div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.1rem' }}>Guía detallada con capturas y diagramas, pensada para tu rol</div>
               </div>
               <span style={{ fontSize: '0.75rem', color: '#5eead4', flexShrink: 0 }}>⬇️</span>
             </a>
