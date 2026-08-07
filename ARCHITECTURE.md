@@ -47,7 +47,8 @@ asistapp/
 │   ├── 009_add_usuario_nuevo_role.sql # (revertida por la 011, ver más abajo)
 │   ├── 010_usuario_nuevo_defaults.sql # (revertida por la 011, ver más abajo)
 │   ├── 011_revert_usuario_nuevo_role.sql # deshace 009/010 — vuelta al default 'estudiante'
-│   └── 012_carga_retroactiva.sql # fill_llegada() admite metodo='manual_retroactivo' (ver §7)
+│   ├── 012_carga_retroactiva.sql # fill_llegada() admite metodo='manual_retroactivo' (ver §7)
+│   └── 013_tendencia_semanal_por_turno.sql # porDia del dashboard: lunes-viernes con split mañana/tarde (ver §7)
 └── src/
     ├── main.tsx                  # bootstrap: createRoot + <StrictMode><App /></StrictMode>
     ├── App.tsx                   # BrowserRouter + rutas (ver §4)
