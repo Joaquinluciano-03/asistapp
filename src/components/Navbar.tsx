@@ -71,6 +71,7 @@ export function Navbar() {
     { to: '/admin', label: '🏠 Inicio', exact: true },
     { to: '/admin/escanear', label: '📷 Escanear QR' },
     { to: '/admin/planillas', label: '📋 Planillas' },
+    { to: '/admin/carga-retroactiva', label: '🕓 Carga retroactiva' },
     { to: '/admin/alumnos', label: '🎓 Alumnos' },
     // Usuarios: preceptor no tiene nada que hacer ahí (gestiona alumnos en /admin/alumnos)
     { to: '/admin/usuarios', label: '👥 Usuarios', roles: ['admin', 'superadmin'] },

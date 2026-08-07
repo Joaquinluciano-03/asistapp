@@ -46,7 +46,8 @@ asistapp/
 │   ├── 008_cleanup_student_on_role_change.sql # limpia la ficha de alumno al ascender a staff (ver §7)
 │   ├── 009_add_usuario_nuevo_role.sql # (revertida por la 011, ver más abajo)
 │   ├── 010_usuario_nuevo_defaults.sql # (revertida por la 011, ver más abajo)
-│   └── 011_revert_usuario_nuevo_role.sql # deshace 009/010 — vuelta al default 'estudiante'
+│   ├── 011_revert_usuario_nuevo_role.sql # deshace 009/010 — vuelta al default 'estudiante'
+│   └── 012_carga_retroactiva.sql # fill_llegada() admite metodo='manual_retroactivo' (ver §7)
 └── src/
     ├── main.tsx                  # bootstrap: createRoot + <StrictMode><App /></StrictMode>
     ├── App.tsx                   # BrowserRouter + rutas (ver §4)
@@ -67,6 +68,7 @@ asistapp/
     │   ├── EstudianteDashboard.tsx
     │   ├── AdminDashboard.tsx
     │   ├── AdminScanner.tsx        # flujo de escaneo/registro, incluye buscador manual (ver §6-7)
+    │   ├── CargaRetroactiva.tsx    # alta manual de llegadas tarde con fecha pasada (ver §7)
     │   ├── GestionUsuarios.tsx     # roles/borrado de usuarios (ver §7)
     │   ├── GestionEstudiantes.tsx  # listado/edición de alumnos, agrupado por curso y división (ver §7)
     │   └── Planillas.tsx           # exportación de asistencia
@@ -98,6 +100,7 @@ Rutas (`STAFF_ROLES = ['preceptor', 'admin', 'superadmin']`, `USER_MANAGEMENT_RO
 | `/admin` | `AdminDashboard` | staff |
 | `/admin/escanear` | `AdminScanner` | staff |
 | `/admin/planillas` | `Planillas` | staff |
+| `/admin/carga-retroactiva` | `CargaRetroactiva` | staff |
 | `/admin/alumnos` | `GestionEstudiantes` | staff |
 | `/admin/usuarios` | `GestionUsuarios` | **solo `admin`/`superadmin`** (`preceptor` no gestiona usuarios, ver más abajo) |
 | `/`, `*` | redirect | → `/login` |
@@ -167,6 +170,8 @@ Validación con zod en `src/schemas/studentSchema.ts` (`grado` limitado a 1°–
 - No hay un campo de estado persistido en el registro; los "estados intermedios" son puramente de UI, no se guardan en la DB.
 - **Edición retroactiva del historial (decisión de producto confirmada):** al editar nombre/grado/división de un alumno en `GestionEstudiantes.tsx`, se reescriben también todos sus registros históricos en `llegadas_tarde` con los datos nuevos. Es intencional — el negocio prefiere que el historial siempre muestre los datos actuales del alumno, no una foto del momento.
 - **Nota histórica:** la función `reset_student` fue eliminada por completo del código (commit `19b844e`) — no reintroducirla salvo pedido explícito.
+
+**Carga retroactiva** (`CargaRetroactiva.tsx`, `012_carga_retroactiva.sql`, ruta `/admin/carga-retroactiva`, staff): permite asentar llegadas tarde de una fecha pasada (no futura) para cualquier alumno — pensado para cuando el sistema o la conexión estuvieron caídos y el preceptor tomó los datos en papel. El cliente envía `student_id`, `fecha`, `turno` y `metodo: 'manual_retroactivo'`; `fill_llegada()` ahora se ramifica según `new.metodo`: para `'manual_retroactivo'` exige `fecha`/`turno` no nulos, rechaza fecha futura (`raise exception` si `fecha > hoy`) y calcula una `hora` nominal según el turno (`08:00` mañana / `13:30` tarde, no hay hora real que registrar); para cualquier otro método (`'qr'`, `'manual'`) el comportamiento es el de siempre — fecha/hora/turno siempre calculados por el servidor con `now()`, el cliente no puede spoofear un registro "en vivo". Mismo doble guardia anti-duplicado que el resto (`student_id+fecha+turno`, UNIQUE en DB). Estas filas quedan identificadas con `metodo = 'manual_retroactivo'` en Planillas (badge "Retroactivo") y en el Excel exportado ("Manual (retroactivo)"), para diferenciarlas de un registro tomado en el momento.
 
 **Borrado = reset sin perder historial** (`004_fix_rls_and_reset.sql`):
 - `students.profile_id` ahora referencia `profiles.id` (antes `auth.users.id`) con `on delete cascade` → borrar un `profiles` row borra automáticamente su `students` row.

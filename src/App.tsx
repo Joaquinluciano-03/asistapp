@@ -10,6 +10,7 @@ const EstudianteDashboard = lazy(() => import('./pages/EstudianteDashboard').the
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
 const AdminScanner = lazy(() => import('./pages/AdminScanner').then(m => ({ default: m.AdminScanner })))
 const Planillas = lazy(() => import('./pages/Planillas').then(m => ({ default: m.Planillas })))
+const CargaRetroactiva = lazy(() => import('./pages/CargaRetroactiva').then(m => ({ default: m.CargaRetroactiva })))
 const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios').then(m => ({ default: m.GestionUsuarios })))
 const GestionEstudiantes = lazy(() => import('./pages/GestionEstudiantes').then(m => ({ default: m.GestionEstudiantes })))
 
@@ -81,6 +82,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
                     <Planillas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/carga-retroactiva"
+                element={
+                  <ProtectedRoute allowedRoles={[...STAFF_ROLES]}>
+                    <CargaRetroactiva />
                   </ProtectedRoute>
                 }
               />

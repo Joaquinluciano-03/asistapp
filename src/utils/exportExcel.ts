@@ -9,6 +9,7 @@ const TURNO_LABEL: Record<string, string> = {
 const METODO_LABEL: Record<string, string> = {
   'qr': 'QR',
   'manual': 'Manual',
+  'manual_retroactivo': 'Manual (retroactivo)',
 }
 
 export function exportarLlegadasExcel(llegadas: LlegadaTarde[], filename?: string) {

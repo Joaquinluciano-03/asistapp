@@ -14,6 +14,13 @@ const TURNO_BADGE: Record<string, string> = {
 const METODO_BADGE: Record<string, string> = {
   'qr': 'badge-success',
   'manual': 'badge-purple',
+  'manual_retroactivo': 'badge-warning',
+}
+
+const METODO_LABEL: Record<string, string> = {
+  'qr': 'QR',
+  'manual': 'Manual',
+  'manual_retroactivo': 'Retroactivo',
 }
 
 const PAGE_SIZE = 500
@@ -289,7 +296,7 @@ export function Planillas() {
                       </td>
                       <td>
                         <span className={`badge ${METODO_BADGE[l.metodo] ?? 'badge-primary'}`}>
-                          {l.metodo}
+                          {METODO_LABEL[l.metodo] ?? l.metodo}
                         </span>
                       </td>
                       <td style={{ fontSize: '0.8rem', color: '#64748b', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

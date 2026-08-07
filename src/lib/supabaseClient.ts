@@ -51,7 +51,7 @@ export interface LlegadaTarde {
   fecha: string
   hora: string
   turno: 'mañana' | 'tarde'
-  metodo: 'qr' | 'manual'
+  metodo: 'qr' | 'manual' | 'manual_retroactivo'
   registrado_por: string | null
   registrado_por_email: string | null
   created_at: string

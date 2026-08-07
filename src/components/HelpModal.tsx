@@ -57,6 +57,19 @@ function buildStaffSections(role: HelpModalProps['role']): Section[] {
         </ol>
       ),
     },
+    {
+      icon: '🕓',
+      title: 'Carga retroactiva',
+      content: (
+        <ol style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: 1.8, fontSize: '0.83rem', color: '#cbd5e1' }}>
+          <li>Ingresá a <strong>Carga retroactiva</strong> desde el menú.</li>
+          <li>Usala si el sistema o la conexión a internet estuvieron caídos y tomaste las llegadas tarde en papel — para asentarlas después con la fecha real en que ocurrieron.</li>
+          <li>Buscá al alumno, elegí la <strong>fecha</strong> (no puede ser futura) y el <strong>turno</strong> correspondiente, y confirmá.</li>
+          <li>Estas cargas quedan identificadas como <strong>"Retroactivo"</strong> en Planillas y en las exportaciones, para diferenciarlas de un registro tomado en el momento con QR.</li>
+          <li>Si el alumno ya tiene una llegada cargada ese día y turno, el sistema avisa y no permite duplicarla.</li>
+        </ol>
+      ),
+    },
   ]
 
   if (!isPreceptor) {
