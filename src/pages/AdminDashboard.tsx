@@ -18,6 +18,16 @@ interface DashboardMetricsRPC {
   porDia: { fecha: string; manana: number; tarde: number }[]
 }
 
+interface QuickCard {
+  to: string
+  icon: string
+  title: string
+  desc: string
+  color: string
+  id: string
+  roles?: string[]
+}
+
 const DIAS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const parseFecha = (fecha: string) => new Date(fecha + 'T00:00:00')
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -57,11 +67,14 @@ export function AdminDashboard() {
     fetchMetrics()
   }, [])
 
-  const cards = [
+  const cards: QuickCard[] = [
     { to: '/admin/escanear', icon: '📷', title: 'Escanear QR', desc: 'Leé el QR del alumno para registrar su llegada tarde.', color: '#0d9488', id: 'card-escanear' },
     { to: '/admin/planillas', icon: '📊', title: 'Planillas', desc: 'Historial de llegadas tarde, filtros y exportación a Excel.', color: '#d97706', id: 'card-planillas' },
-    { to: '/admin/usuarios', icon: '👥', title: 'Usuarios', desc: 'Administrá roles: estudiante, admin y superadmin.', color: '#059669', id: 'card-usuarios' },
-  ]
+    { to: '/admin/carga-retroactiva', icon: '🕓', title: 'Carga retroactiva', desc: 'Registrá llegadas tarde de fechas pasadas.', color: '#7c3aed', id: 'card-carga-retroactiva' },
+    { to: '/admin/alumnos', icon: '🎓', title: 'Alumnos', desc: 'Padrón de estudiantes por año y división.', color: '#0369a1', id: 'card-alumnos' },
+    // Usuarios: preceptor no tiene nada que hacer ahí (gestiona alumnos en /admin/alumnos)
+    { to: '/admin/usuarios', icon: '👥', title: 'Usuarios', desc: 'Administrá roles: estudiante, preceptor, admin y superadmin.', color: '#059669', id: 'card-usuarios', roles: ['admin', 'superadmin'] },
+  ].filter((card) => !card.roles || card.roles.includes(profile?.role ?? ''))
 
   const porDiaLabeled = metricas
     ? metricas.porDia.map(({ fecha, manana, tarde }) => {
